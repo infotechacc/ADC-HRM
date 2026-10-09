@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_remove_platform_branding" model="ir.actions.server">
+        <field name="name">Clean Template Branding</field>
+        <field name="model_id" ref="mail.model_mail_template"/>
+        <field name="binding_model_id" ref="mail.model_mail_template"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_remove_platform_branding()</field>
+    </record>
+</odoo>

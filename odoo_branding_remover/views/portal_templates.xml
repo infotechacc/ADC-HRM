@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_record_sidebar_hide_vendor_footer" inherit_id="portal.portal_record_sidebar">
+        <xpath expr="//div[contains(@class, 'text-center') and contains(@class, 'text-muted')][contains(., 'Powered by')]" position="replace"/>
+    </template>
+</odoo>

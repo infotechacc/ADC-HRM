@@ -1,0 +1,8 @@
+<odoo>
+    <record id="hr.menu_hr_employee" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('hr.group_hr_user')])]"/>
+    </record>
+    <record id="hr.hr_employee_public_action" model="ir.actions.act_window">
+        <field name="group_ids" eval="[(6, 0, [ref('hr.group_hr_user')])]"/>
+    </record>
+</odoo>

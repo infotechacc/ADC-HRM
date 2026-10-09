@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<odoo>
+    <record id="view_employee_work" model="ir.ui.view">
+        <field name="name">hr.employee.work.management</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_binaryaid_work" type="object" class="oe_stat_button" icon="fa-tasks" groups="binaryaid_work_management.group_work_admin">
+                    <span>Work Management</span>
+                </button>
+                <button name="action_binaryaid_work_history" type="object" class="oe_stat_button" icon="fa-calendar" groups="binaryaid_work_management.group_work_admin">
+                    <span>Daily Work History</span>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

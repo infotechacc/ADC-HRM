@@ -1,0 +1,184 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<odoo>
+    <record id="view_work_list" model="ir.ui.view">
+        <field name="name">binaryaid.work.list</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <list string="Work Management" decoration-success="state == '1_done'" default_order="binaryaid_work_date desc, id desc" default_group_by="binaryaid_work_date:day" expand="0" delete="false">
+                <field name="name"/>
+                <field name="binaryaid_employee_id"/>
+                <field name="binaryaid_work_date" optional="show"/>
+                <field name="binaryaid_latest_note" optional="show"/>
+                <field name="description" optional="hide"/>
+                <field name="priority" widget="priority"/>
+                <field name="state" widget="badge"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_work_form" model="ir.ui.view">
+        <field name="name">binaryaid.work.form</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <form string="Work Item" duplicate="false" delete="false">
+                <header>
+                    <button name="action_binaryaid_complete" type="object" string="Mark Completed" class="btn-primary" invisible="not id or state == '1_done'"/>
+                    <button name="action_binaryaid_update" type="object" string="Add Daily Work Note" invisible="not id"/>
+                    <button name="action_binaryaid_reopen" type="object" string="Reopen" groups="binaryaid_work_management.group_work_admin" invisible="state != '1_done'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="01_in_progress,1_done" readonly="1"/>
+                </header>
+                <sheet>
+                    <field name="binaryaid_is_admin" invisible="1"/>
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="What needs to be done?" readonly="id and not binaryaid_is_admin"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <field name="binaryaid_employee_id" required="1" readonly="id or not binaryaid_is_admin" domain="[('user_id', '!=', False)]" options="{'no_create': True, 'no_open': True}"/>
+                        <field name="binaryaid_work_date" required="1" readonly="id"/>
+                        <field name="company_id" readonly="1" groups="base.group_multi_company"/>
+                        <field name="priority" widget="priority" readonly="id and not binaryaid_is_admin"/>
+                    </group>
+                    <notebook>
+                        <page string="Description">
+                            <field name="description" readonly="state == '1_done' and not binaryaid_is_admin"/>
+                        </page>
+                        <page string="Daily Work History">
+                            <field name="binaryaid_work_log_ids" readonly="1">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="work_date"/>
+                                    <field name="event"/>
+                                    <field name="note"/>
+                                    <field name="author_id"/>
+                                    <field name="create_date" string="Recorded At"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_work_search" model="ir.ui.view">
+        <field name="name">binaryaid.work.search</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="binaryaid_employee_id"/>
+                <filter name="in_progress" string="In Progress" domain="[('state', '=', '01_in_progress')]"/>
+                <filter name="completed" string="Completed" domain="[('state', '=', '1_done')]"/>
+                <separator/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="work_day" string="Work Date" context="{'group_by': 'binaryaid_work_date:day'}"/>
+                    <filter name="employee" string="Employee" context="{'group_by': 'binaryaid_employee_id'}"/>
+                    <filter name="status" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_work_items" model="ir.actions.act_window">
+        <field name="name">Work Management</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_work_list"/>
+        <field name="search_view_id" ref="view_work_search"/>
+        <field name="domain">[('binaryaid_employee_id', '!=', False)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Your assigned work will appear here.</p>
+            <p>Add work for this employee, record daily notes, and mark completed items.</p>
+        </field>
+    </record>
+    <record id="action_work_list_binding" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_work_list"/>
+        <field name="act_window_id" ref="action_work_items"/>
+    </record>
+    <record id="action_work_form_binding" model="ir.actions.act_window.view">
+        <field name="sequence">2</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_work_form"/>
+        <field name="act_window_id" ref="action_work_items"/>
+    </record>
+    <record id="view_history_list" model="ir.ui.view">
+        <field name="name">binaryaid.work.history.list</field>
+        <field name="model">binaryaid.work.log</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false" delete="false" decoration-success="event == 'completed'">
+                <field name="work_date"/>
+                <field name="employee_id"/>
+                <field name="task_id"/>
+                <field name="event"/>
+                <field name="note"/>
+                <field name="author_id"/>
+                <field name="create_date" string="Recorded At"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_history_form" model="ir.ui.view">
+        <field name="name">binaryaid.work.history.form</field>
+        <field name="model">binaryaid.work.log</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <field name="work_date"/>
+                        <field name="employee_id"/>
+                        <field name="task_id"/>
+                        <field name="event"/>
+                        <field name="author_id"/>
+                        <field name="create_date" string="Recorded At"/>
+                    </group>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_history_search" model="ir.ui.view">
+        <field name="name">binaryaid.work.history.search</field>
+        <field name="model">binaryaid.work.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="task_id"/>
+                <field name="note"/>
+                <filter name="work_month" string="Work Date" date="work_date" default_period="month"/>
+                <separator/>
+                <filter name="completed" string="Completions" domain="[('event', '=', 'completed')]"/>
+                <filter name="notes" string="Work Notes" domain="[('event', '=', 'note')]"/>
+                <group>
+                    <filter name="employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="day" string="Day" context="{'group_by': 'work_date:day'}"/>
+                    <filter name="month" string="Month" context="{'group_by': 'work_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_history_pivot" model="ir.ui.view">
+        <field name="name">binaryaid.work.history.pivot</field>
+        <field name="model">binaryaid.work.log</field>
+        <field name="arch" type="xml">
+            <pivot string="Work History">
+                <field name="employee_id" type="row"/>
+                <field name="event" type="row"/>
+                <field name="work_date" type="col" interval="day"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="action_work_history" model="ir.actions.act_window">
+        <field name="name">Daily Work History</field>
+        <field name="res_model">binaryaid.work.log</field>
+        <field name="view_mode">list,pivot,form</field>
+        <field name="search_view_id" ref="view_history_search"/>
+        <field name="context">{'search_default_work_month': 1, 'search_default_employee': 1, 'search_default_day': 2}</field>
+    </record>
+    <menuitem id="menu_work_root" name="Work Management" parent="hr.menu_hr_root" sequence="25" groups="group_work_user"/>
+    <menuitem id="menu_work_items" name="Work Items" parent="menu_work_root" action="action_work_items" sequence="10"/>
+    <menuitem id="menu_work_history" name="Daily Work History" parent="menu_work_root" action="action_work_history" sequence="20"/>
+</odoo>

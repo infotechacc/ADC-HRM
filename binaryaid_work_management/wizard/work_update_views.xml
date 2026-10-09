@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<odoo>
+    <record id="view_work_update_form" model="ir.ui.view">
+        <field name="name">binaryaid.work.update.form</field>
+        <field name="model">binaryaid.work.update</field>
+        <field name="arch" type="xml">
+            <form string="Add Daily Work Note">
+                <group>
+                    <field name="task_id" options="{'no_open': True}"/>
+                    <field name="work_date"/>
+                    <field name="note" placeholder="Describe what you worked on or completed on this date…"/>
+                </group>
+                <footer>
+                    <button name="action_submit" type="object" string="Save Note" class="btn-primary"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

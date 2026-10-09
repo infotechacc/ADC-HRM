@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="account_edi_ubl_cii.action_report_account_invoices_generated_by_odoo" model="ir.actions.report">
+        <field name="name">Invoice report</field>
+    </record>
+</odoo>

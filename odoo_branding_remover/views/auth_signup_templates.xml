@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="reset_password_email_hide_vendor_footer" inherit_id="auth_signup.reset_password_email">
+        <xpath expr="//tr[td/table//a[contains(@href, 'odoo.com')]]" position="replace"/>
+    </template>
+</odoo>

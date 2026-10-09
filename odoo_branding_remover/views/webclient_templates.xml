@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="web_layout_brand_title" inherit_id="web.layout">
+        <xpath expr="//title" position="replace">
+            <title t-esc="title or 'BinaryAid HRMS'"/>
+        </xpath>
+    </template>
+
+    <template id="hide_brand_promotion_message" inherit_id="web.brand_promotion_message">
+        <xpath expr="//t[@t-set='odoo_logo']" position="replace"/>
+        <xpath expr="//t[@t-set='final_message']" position="replace"/>
+        <xpath expr="//t[@t-out]" position="replace"/>
+    </template>
+
+    <template id="login_layout_hide_vendor_footer" inherit_id="web.login_layout">
+        <xpath expr="//div[contains(@class, 'text-center') and contains(@class, 'small') and contains(@class, 'border-top')]" position="replace"/>
+    </template>
+
+    <template id="offline_page_remove_vendor_text" inherit_id="web.webclient_offline">
+        <xpath expr="//div[contains(@class, 'card')]/img" position="replace"/>
+        <xpath expr="//div[contains(@class, 'card')]/p" position="replace">
+            <p>Check your network connection and come back here. The system will load as soon as you're back online.</p>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_layout_brand_title" inherit_id="web.report_layout">
+        <xpath expr="//title/t" position="replace">
+            <t t-esc="title or 'Report'"/>
+        </xpath>
+    </template>
+
+    <template id="report_preview_layout_brand_title" inherit_id="web.report_preview_layout">
+        <xpath expr="//title/t" position="replace">
+            <t t-esc="title or 'Report'"/>
+        </xpath>
+    </template>
+</odoo>

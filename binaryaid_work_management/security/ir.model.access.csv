@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_work_log_user,Work history read,model_binaryaid_work_log,group_work_user,1,0,0,0
+access_work_update_user,Daily work note wizard,model_binaryaid_work_update,group_work_user,1,1,1,1
+access_work_employee_user,Work employee directory,model_binaryaid_work_employee,group_work_user,1,0,0,0
