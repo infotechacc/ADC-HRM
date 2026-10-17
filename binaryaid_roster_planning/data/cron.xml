@@ -1,0 +1,9 @@
+<odoo noupdate="1">
+    <record id="cron_generate_rosters" model="ir.cron">
+        <field name="name">Roster Planning: maintain future schedule horizon</field>
+        <field name="model_id" ref="model_binaryaid_roster_assignment"/>
+        <field name="state">code</field><field name="code">model._cron_generate()</field>
+        <field name="user_id" ref="base.user_admin"/><field name="interval_number">1</field><field name="interval_type">hours</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

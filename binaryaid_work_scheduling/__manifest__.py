@@ -1,6 +1,6 @@
 {
     'name': 'BinaryAid Work Scheduling',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.1',
     'category': 'Human Resources',
     'summary': 'Weekly employee rosters and shift task assignments',
     'description': 'Weekly published employee shifts with existing work tasks and HRMS dashboard integration.',

@@ -107,15 +107,20 @@ class WorkShift(models.Model):
         monday = local.date() - timedelta(days=local.weekday())
         week_start = tz.localize(fields.Datetime.to_datetime(monday)).astimezone(pytz.UTC).replace(tzinfo=None)
         week_end = tz.localize(fields.Datetime.to_datetime(monday + timedelta(days=7))).astimezone(pytz.UTC).replace(tzinfo=None)
-        others = self.search([('employee_id', '=', self.employee_id.id), ('state', '=', 'published'), ('id', '!=', self.id)])
+        base = [('employee_id', '=', self.employee_id.id), ('state', '=', 'published'), ('id', '!=', self.id)]
         if self.min_rest_hours:
-            for other in others:
-                gap = ((self.start - other.end) if other.end <= self.start else (other.start - self.end)).total_seconds() / 3600
-                if 0 <= gap < self.min_rest_hours:
-                    warnings.append(_('An adjacent shift is inside the configured rest period.'))
-                    break
-        # Count full shifts by local start date; see README for overnight boundary limitations.
-        total = self.planned_hours + sum(s.planned_hours for s in others if week_start <= s.start < week_end)
+            previous = self.search(base + [('end', '<=', self.start)], order='end desc', limit=1)
+            following = self.search(base + [('start', '>=', self.end)], order='start', limit=1)
+            gaps = []
+            if previous:
+                gaps.append((self.start - previous.end).total_seconds() / 3600)
+            if following:
+                gaps.append((following.start - self.end).total_seconds() / 3600)
+            if any(gap < self.min_rest_hours for gap in gaps):
+                warnings.append(_('An adjacent shift is inside the configured rest period.'))
+        # Full shifts attributed to the local start week; this is a review metric, not payroll.
+        weekly = self.search(base + [('start', '>=', week_start), ('start', '<', week_end)])
+        total = self.planned_hours + sum(weekly.mapped('planned_hours'))
         if self.weekly_hours_limit and total > self.weekly_hours_limit:
             warnings.append(_('Planned hours exceed the configured weekly review threshold.'))
         return warnings
@@ -144,8 +149,8 @@ class WorkShift(models.Model):
             warnings = shift._review_warnings()
             if warnings and not (shift.review_note or '').strip():
                 raise ValidationError('\n'.join(warnings) + '\n' + _('Record a manager review before publishing.'))
-            super(WorkShift, shift).write({'state': 'published', 'published_at': fields.Datetime.now()})
-            shift.message_post(body=_('Shift published. %s', ' '.join(warnings)),
+            shift._roster_transition_write({'state': 'published', 'published_at': fields.Datetime.now()})
+            shift.with_context(mail_notify_force_send=False).message_post(body=_('Shift published. %s', ' '.join(warnings)),
                                partner_ids=shift.user_id.partner_id.ids)
         return True
 
@@ -157,9 +162,18 @@ class WorkShift(models.Model):
         for shift in self:
             if shift.state != 'published' or not (shift.change_reason or '').strip():
                 raise ValidationError(_('Provide a reason on a published shift before revising or cancelling it.'))
-            shift.message_post(body=_('Shift %s: %s', state, shift.change_reason), partner_ids=shift.user_id.partner_id.ids)
-            super(WorkShift, shift).write({'state': state, 'review_note': False, 'change_reason': False})
+            shift.with_context(mail_notify_force_send=False).message_post(body=_('Shift %s: %s', state, shift.change_reason), partner_ids=shift.user_id.partner_id.ids)
+            shift._roster_transition_write({'state': state, 'review_note': False, 'change_reason': False})
         return True
+
+    def _roster_transition_write(self, vals):
+        """Private lifecycle hook for audited planning extensions; never an RPC write bypass."""
+        self._check_manager()
+        self.check_access('write')
+        self.lock_for_update()
+        if set(vals) - {'state', 'published_at', 'review_note', 'change_reason'}:
+            raise AccessError(_('Only lifecycle fields may be changed through this hook.'))
+        return super().write(vals)
 
     def action_revise(self):
         return self._change_publication('draft')

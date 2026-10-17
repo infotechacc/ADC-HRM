@@ -1,0 +1,5 @@
+<templates xml:space="preserve">
+    <t t-name="binaryaid_roster_planning.ShiftBreaks" t-inherit="binaryaid_hrms_dashboard.Dashboard" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('ba_shift_body')]/p" position="inside"><span><i class="fa fa-coffee me-1" aria-hidden="true"/><t t-esc="shift.unpaid_break_minutes"/> min unpaid break</span></xpath>
+    </t>
+</templates>

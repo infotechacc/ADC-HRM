@@ -34,11 +34,7 @@
                             <field name="task_ids" readonly="state != 'draft'" context="{'default_binaryaid_employee_id': employee_id, 'default_company_id': company_id}" options="{'no_create': True}">
                                 <list><field name="name" readonly="state != 'draft'"/><field name="binaryaid_work_date"/><field name="state"/></list>
                             </field>
-                        </page>
-                        <page string="Roster Review" groups="binaryaid_work_management.group_work_admin">
-                            <p>Configure thresholds for the applicable award or agreement. Zero disables a threshold. Threshold exceptions require a recorded manager review; this does not certify legal compliance.</p>
-                            <group readonly="state != 'draft'"><field name="award_reference" readonly="state != 'draft'"/><field name="notice_hours" readonly="state != 'draft'"/><field name="min_rest_hours" readonly="state != 'draft'"/><field name="weekly_hours_limit" readonly="state != 'draft'"/><field name="review_note" readonly="state != 'draft'"/></group>
-                            <field name="change_reason" invisible="state != 'published'"/><field name="published_at"/>
+                            <group groups="binaryaid_work_management.group_work_admin"><field name="review_note" string="Manager Note" invisible="state != 'draft'"/><field name="change_reason" invisible="state != 'published'"/></group>
                         </page>
                     </notebook>
                 </sheet><chatter/>
