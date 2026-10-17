@@ -1,0 +1,12 @@
+<odoo>
+    <record id="rule_shift_company" model="ir.rule">
+        <field name="name">Shifts: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_work_shift"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_shift_owner" model="ir.rule">
+        <field name="name">Shifts: own published roster or administrator</field>
+        <field name="model_id" ref="model_binaryaid_work_shift"/>
+        <field name="domain_force">[(1, '=', 1)] if user.has_group('binaryaid_work_management.group_work_admin') else [('user_id', '=', user.id), ('state', 'in', ['published', 'cancelled'])]</field>
+    </record>
+</odoo>

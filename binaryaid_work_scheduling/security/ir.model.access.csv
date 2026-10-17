@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_shift_user,shift.user,model_binaryaid_work_shift,binaryaid_work_management.group_work_user,1,0,0,0
+access_shift_admin,shift.admin,model_binaryaid_work_shift,binaryaid_work_management.group_work_admin,1,1,1,1

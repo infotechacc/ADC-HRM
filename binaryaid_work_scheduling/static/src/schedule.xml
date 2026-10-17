@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="binaryaid_work_scheduling.Schedule" t-inherit="binaryaid_hrms_dashboard.Dashboard" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('ba_metrics')]" position="after">
+            <section t-if="d.schedule" class="ba_panel mb-4">
+                <div class="ba_panel_heading"><div><h2>My shifts this week</h2><p class="text-muted mb-0">Monday–Sunday · <t t-esc="d.schedule.timezone"/></p></div><button class="btn btn-outline-primary" t-on-click="() => this.openSection('work_schedule')">Open weekly calendar</button></div>
+                <p t-if="!d.schedule.shifts.length" class="text-muted mt-3">No published shifts this week.</p>
+                <div t-else="" class="table-responsive"><table class="table"><thead><tr><th>Shift</th><th>Start</th><th>Finish</th><th>Paid hours</th><th>Location</th><th>Tasks</th></tr></thead><tbody><tr t-foreach="d.schedule.shifts" t-as="shift" t-key="shift.id"><td t-esc="shift.name"/><td t-esc="shift.start"/><td t-esc="shift.end"/><td t-esc="shift.hours"/><td t-esc="shift.location"/><td t-esc="shift.tasks"/></tr></tbody></table></div>
+            </section>
+        </xpath>
+    </t>
+</templates>
