@@ -1,6 +1,6 @@
 {
     'name': 'BinaryAid HRMS Dashboard',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Human Resources',
     'summary': 'Role-aware HRMS overview and default staff landing page',
     'author': 'BinaryAid',

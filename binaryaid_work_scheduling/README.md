@@ -124,4 +124,15 @@ dashboard, weekly calendar and shift detail dialog.
 Validation on the supplied Odoo 19 source and an isolated PostgreSQL 16 database:
 28 integration/regression tests passed across Scheduling, Work Management and
 HRMS Dashboard. The expanded calendar-to-shift-detail Chrome check also passed.
-Production database installation and production-volume load testing were not performed.
+Production-volume load testing was not performed. Server installation and
+upgrade health checks are performed separately, with database and filestore backups.
+
+## Dashboard refresh (19.0.1.1.0)
+
+The schedule integrates into the redesigned dashboard's main column. A seven-day
+strip highlights today and marks days touched by published shifts, including
+shifts continuing after midnight. Shift cards show local start/end times,
+location, tasks and full planned paid hours. Select a card to open the shift;
+the server rechecks ownership, published state and active company. The calendar
+button remains available for the full schedule. Preview limits are stated when
+100 shifts are returned. Upgrade Scheduling and HRMS Dashboard together.

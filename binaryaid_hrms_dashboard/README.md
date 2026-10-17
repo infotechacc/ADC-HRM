@@ -25,3 +25,23 @@ server-owned specifications with the same domain for their count and drilldown.
 The session extension and client action registry should be revalidated on Odoo
 major upgrades. Tests cover own-work isolation, denied drilldowns, company scope,
 backdating, no-role/portal access, and the session's landing action.
+
+## Dashboard presentation (19.0.1.1.0)
+
+The workspace uses a navy welcome area, role-aware metric cards, and a responsive
+main/sidebar layout. Recent work keeps its existing drilldowns; monthly progress
+and permitted quick actions appear alongside it. At smaller widths the panels
+stack, and work tables scroll within their panel. Focus indicators, labelled
+controls, refresh feedback, useful empty states and reduced-motion preferences
+are supported. All displayed metrics come from the existing server definitions.
+
+The optional Scheduling extension fills `ba_schedule_slot` with a Monday–Sunday
+strip and shift cards. It uses the request timezone for dates/times and preserves
+published-shift ownership checks for card navigation. No placeholder metrics,
+chart trends or demo work are inserted into the dashboard.
+
+Upgrade both `binaryaid_hrms_dashboard` and `binaryaid_work_scheduling` together
+when Scheduling is installed, then refresh the web client to load the new assets.
+Chrome tests cover manager desktop and employee mobile layouts, real work data,
+keyboard focus and horizontal overflow. Successful runs save viewport screenshots
+under Odoo's configured screenshots directory.

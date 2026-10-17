@@ -1,11 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="binaryaid_work_scheduling.Schedule" t-inherit="binaryaid_hrms_dashboard.Dashboard" t-inherit-mode="extension">
-        <xpath expr="//div[hasclass('ba_metrics')]" position="after">
-            <section t-if="d.schedule" class="ba_panel mb-4">
-                <div class="ba_panel_heading"><div><h2>My shifts this week</h2><p class="text-muted mb-0">Monday–Sunday · <t t-esc="d.schedule.timezone"/></p></div><button class="btn btn-outline-primary" t-on-click="() => this.openSection('work_schedule')">Open weekly calendar</button></div>
-                <p t-if="!d.schedule.shifts.length" class="text-muted mt-3">No published shifts this week.</p>
-                <div t-else="" class="table-responsive"><table class="table"><thead><tr><th>Shift</th><th>Start</th><th>Finish</th><th>Paid hours</th><th>Location</th><th>Tasks</th></tr></thead><tbody><tr t-foreach="d.schedule.shifts" t-as="shift" t-key="shift.id"><td t-esc="shift.name"/><td t-esc="shift.start"/><td t-esc="shift.end"/><td t-esc="shift.hours"/><td t-esc="shift.location"/><td t-esc="shift.tasks"/></tr></tbody></table></div>
+        <xpath expr="//div[hasclass('ba_schedule_slot')]" position="inside">
+            <section t-if="d.schedule" class="ba_panel ba_schedule_panel">
+                <div class="ba_panel_heading"><div><span class="ba_section_kicker">PLAN YOUR WEEK</span><h2>My shifts this week</h2><div class="ba_week_meta"><span t-esc="d.schedule.period"/><span class="ba_timezone"><i class="fa fa-globe" aria-hidden="true"/><t t-esc="d.schedule.timezone"/></span></div></div><button class="btn ba_primary_btn" t-on-click="() => this.openSection('work_schedule')">Open weekly calendar<i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button></div>
+                <div class="ba_week_strip" aria-label="Monday to Sunday shift overview">
+                    <div t-foreach="d.schedule.days" t-as="day" t-key="day.date" t-att-class="'ba_week_day' + (day.today ? ' is_today' : '')" t-att-aria-current="day.today ? 'date' : undefined" t-att-aria-label="day.date + ': ' + day.count + ' shifts'" t-att-title="day.date + ': ' + day.count + ' shifts'"><span class="ba_day_label" t-esc="day.label"/><strong t-esc="day.number"/><span class="ba_day_dots" aria-hidden="true"><span t-if="day.count" class="ba_day_dot"/><span t-if="day.count > 1" class="ba_day_dot"/><span t-if="day.count > 2" class="ba_day_dot"/></span></div>
+                </div>
+                <div t-if="!d.schedule.shifts.length" class="ba_schedule_empty"><span class="ba_empty_icon"><i class="fa fa-calendar-check-o" aria-hidden="true"/></span><div><h3>Your week is open</h3><p>No published shifts this week. New shifts will appear here when your manager publishes them.</p></div></div>
+                <div t-else="" class="ba_shift_list">
+                    <button t-foreach="d.schedule.shifts" t-as="shift" t-key="shift.id" class="ba_shift_card" t-on-click="() => this.navigate('open_shift', shift.id)" t-att-aria-label="'View shift: ' + shift.name + ', ' + shift.start">
+                        <div class="ba_shift_date" aria-hidden="true"><span t-esc="shift.day"/><strong t-esc="shift.day_number"/></div>
+                        <div class="ba_shift_body"><h3 t-esc="shift.name"/><p><span><i class="fa fa-clock-o me-1" aria-hidden="true"/><t t-esc="shift.time_label"/></span><span t-if="shift.location"><i class="fa fa-map-marker me-1" aria-hidden="true"/><t t-esc="shift.location"/></span></p><span t-if="shift.tasks" class="ba_shift_tasks"><i class="fa fa-tasks me-1" aria-hidden="true"/><t t-esc="shift.tasks"/></span></div>
+                        <div class="ba_shift_hours"><strong><t t-esc="shift.hours"/> hrs</strong><span>planned paid</span></div><i class="fa fa-angle-right ba_shift_chevron" aria-hidden="true"/>
+                    </button>
+                </div>
+                <p t-if="d.schedule.preview_limited" class="ba_schedule_limit">Showing the first 100 shifts. Open the calendar for your complete schedule.</p>
             </section>
         </xpath>
     </t>

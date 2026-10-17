@@ -1,47 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 <t t-name="binaryaid_hrms_dashboard.Dashboard">
-    <div class="ba_dashboard h-100 overflow-auto">
+    <div class="ba_dashboard h-100 overflow-auto" t-att-aria-busy="state.loading ? 'true' : 'false'">
         <div class="ba_dashboard_inner">
-            <div t-if="state.error" class="alert alert-warning" role="alert">The dashboard could not be loaded. <button class="btn btn-link" t-on-click="load">Try again</button></div>
-            <div t-if="!state.data and state.loading" class="p-5 text-center" role="status">Loading your HRMS overview…</div>
+            <div t-if="state.error" class="alert alert-warning d-flex align-items-center justify-content-between" role="alert"><span>We couldn’t refresh your overview. Please try again.</span><button class="btn btn-sm btn-outline-dark" t-on-click="load" t-att-disabled="state.loading">Try again</button></div>
+            <div t-if="!state.data and state.loading" class="ba_loading" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"/>Preparing your workspace…</div>
             <t t-if="state.data">
                 <t t-set="d" t-value="state.data"/>
+                <div class="ba_topline"><div class="ba_brand"><span class="ba_brand_mark"><i class="fa fa-th-large" aria-hidden="true"/></span>Workspace<span class="ba_topline_divider">/</span><span class="ba_company" t-esc="d.company_name"/></div><span class="ba_context"><i class="fa fa-building-o" aria-hidden="true"/>Active company</span></div>
                 <header class="ba_hero">
-                    <div>
-                        <div class="ba_eyebrow">BINARYAID HRMS <span> / </span> <t t-esc="d.company_name"/></div>
-                        <h1>HRMS Dashboard</h1>
-                        <p>Welcome, <t t-esc="d.user_name"/>. Here is your HR overview.</p>
+                    <div class="ba_hero_content">
+                        <div class="ba_eyebrow">YOUR HR WORKSPACE</div>
+                        <h1>Welcome back, <t t-esc="d.user_name.split(' ')[0]"/>.</h1>
+                        <p t-if="d.manager">A clear view of your people, priorities, and the work ahead.</p>
+                        <p t-else="">Your schedule, your work, and everything you need to stay on track.</p>
+                        <span class="ba_hero_scope"><i t-att-class="'fa ' + (d.manager ? 'fa-users' : 'fa-user-o')" aria-hidden="true"/><t t-esc="d.manager ? 'Team overview' : 'My overview'"/></span>
                     </div>
                     <div class="ba_header_meta">
-                        <span t-esc="d.today_label"/>
-                        <button class="btn btn-outline-secondary" t-on-click="load" t-att-disabled="state.loading"><i class="fa fa-refresh me-2" aria-hidden="true"/>Refresh</button>
+                        <span class="ba_date_label">TODAY</span><span class="ba_today" t-esc="d.today_label"/>
+                        <button class="btn ba_refresh" t-on-click="load" t-att-disabled="state.loading"><i t-att-class="'fa fa-refresh me-2' + (state.loading ? ' fa-spin' : '')" aria-hidden="true"/><t t-if="state.loading">Refreshing…</t><t t-else="">Refresh overview</t></button>
                     </div>
                 </header>
-                <nav class="ba_shortcuts" aria-label="HRMS shortcuts">
-                    <button t-foreach="d.shortcuts" t-as="link" t-key="link.key" class="btn btn-light" t-on-click="() => this.openSection(link.key)"><i t-att-class="'fa ' + link.icon + ' me-2'" aria-hidden="true"/><t t-esc="link.label"/><i class="fa fa-angle-right ms-3" aria-hidden="true"/></button>
-                </nav>
-                <div class="ba_metrics">
+                <div class="ba_section_intro"><div><span class="ba_section_kicker">AT A GLANCE</span><h2>Your overview</h2></div><span class="ba_section_hint">Current company · Your permitted records</span></div>
+                <div t-if="d.cards.length" class="ba_metrics">
                     <button t-foreach="d.cards" t-as="card" t-key="card.key" t-att-class="'ba_metric ba_' + card.color" t-on-click="() => this.openSection(card.key)">
-                        <div class="ba_metric_top"><span t-esc="card.label"/><i t-att-class="'fa ' + card.icon" aria-hidden="true"/></div>
-                        <strong t-esc="card.value"/><small t-esc="card.hint"/>
+                        <div class="ba_metric_top"><span class="ba_metric_icon"><i t-att-class="'fa ' + card.icon" aria-hidden="true"/></span><i class="fa fa-arrow-up ba_metric_arrow" aria-hidden="true"/></div>
+                        <strong t-esc="card.value"/><span class="ba_metric_label" t-esc="card.label"/><small t-esc="card.hint"/>
                     </button>
                 </div>
-                <t t-if="d.can_work">
-                    <section class="ba_panel ba_progress_panel">
-                        <div><div class="ba_eyebrow" t-esc="d.manager ? 'COMPANY WORK' : 'MY WORK'"/><h2>This month’s progress</h2><p class="mb-0"><t t-esc="d.month_label"/> · <t t-esc="d.month_done"/> of <t t-esc="d.month_total"/> work items completed</p></div>
-                        <div class="ba_progress_wrap"><strong><t t-esc="d.completion_percent"/>%</strong><div class="progress" role="progressbar" aria-label="Monthly work completion" t-att-aria-valuenow="d.completion_percent" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" t-att-style="'width:' + d.completion_percent + '%'"/></div><small>Based on Work Date in the active company</small></div>
-                    </section>
-                    <section class="ba_panel ba_recent_work">
-                        <div class="ba_panel_heading">
-                            <div><h2>Recent work</h2><p class="mb-0 mt-1 text-muted">Latest work items, ordered by Work Date</p></div>
-                            <button t-if="d.manager or d.has_employee" class="btn btn-outline-primary" t-on-click="() => this.openSection(d.manager ? 'employee_work' : 'my_work')">View all work<i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button>
-                        </div>
-                        <div t-if="!d.recent_work.length" class="ba_empty"><i class="fa fa-list-alt" aria-hidden="true"/><p>No work items yet.</p><span>Your assigned and self-added work will appear here.</span></div>
-                        <div t-else="" class="table-responsive"><table class="table ba_work_table"><thead><tr><th scope="col">Work item</th><th t-if="d.manager" scope="col">Employee</th><th scope="col">Work Date</th><th scope="col">Status</th></tr></thead><tbody><tr t-foreach="d.recent_work" t-as="work" t-key="work.id"><td><button class="btn btn-link p-0 text-start" t-on-click="() => this.openWork(work.id)" t-esc="work.name"/></td><td t-if="d.manager" class="ba_employee_cell" t-esc="work.employee"/><td class="text-nowrap" t-esc="work.date"/><td><span t-att-class="'ba_status ' + (work.done ? 'ba_done' : '')"><i t-att-class="'fa me-1 ' + (work.done ? 'fa-check-circle' : 'fa-clock-o')" aria-hidden="true"/><t t-esc="work.status"/></span></td></tr></tbody></table></div>
-                    </section>
-                </t>
-                <div t-if="!d.can_work" class="ba_panel ba_empty"><i class="fa fa-home" aria-hidden="true"/><h2>Your HRMS overview</h2><p>Available summaries reflect your current permissions. Contact your administrator if you need Work Management access.</p></div>
+                <div class="ba_workspace">
+                    <main class="ba_main_column" aria-label="Work and schedule">
+                        <div class="ba_schedule_slot"/>
+                        <section t-if="d.can_work" class="ba_panel ba_recent_work">
+                            <div class="ba_panel_heading"><div><span class="ba_section_kicker">WORKSPACE</span><h2>Recent work</h2><p>Your latest work items, ordered by Work Date</p></div><button t-if="d.manager or d.has_employee" class="btn ba_text_action" t-on-click="() => this.openSection(d.manager ? 'employee_work' : 'my_work')">View all work<i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button></div>
+                            <div t-if="!d.recent_work.length" class="ba_empty"><span class="ba_empty_icon"><i class="fa fa-check-square-o" aria-hidden="true"/></span><h3>A fresh start for your work</h3><p>Your assigned and self-added work will appear here.</p><button t-if="d.manager or d.has_employee" class="btn ba_secondary_btn" t-on-click="() => this.openSection(d.manager ? 'employee_work' : 'my_work')">Open work history<i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button></div>
+                            <div t-else="" class="table-responsive"><table class="table ba_work_table"><thead><tr><th scope="col">Work item</th><th t-if="d.manager" scope="col">Employee</th><th scope="col">Work Date</th><th scope="col">Status</th><th scope="col"><span class="visually-hidden">Open work</span></th></tr></thead><tbody><tr t-foreach="d.recent_work" t-as="work" t-key="work.id"><td><div class="ba_work_identity"><span t-att-class="'ba_work_icon ' + (work.done ? 'is_done' : '')"><i t-att-class="'fa ' + (work.done ? 'fa-check' : 'fa-file-text-o')" aria-hidden="true"/></span><button class="btn btn-link p-0 text-start" t-on-click="() => this.openWork(work.id)" t-esc="work.name"/></div></td><td t-if="d.manager" class="ba_employee_cell" t-esc="work.employee"/><td class="text-nowrap ba_work_date" t-esc="work.date"/><td><span t-att-class="'ba_status ' + (work.done ? 'ba_done' : '')"><span class="ba_status_dot"/><t t-esc="work.status"/></span></td><td><button class="btn ba_row_action" t-on-click="() => this.openWork(work.id)" t-att-aria-label="'Open ' + work.name"><i class="fa fa-angle-right" aria-hidden="true"/></button></td></tr></tbody></table></div>
+                        </section>
+                        <section t-if="!d.can_work" class="ba_panel ba_empty"><span class="ba_empty_icon"><i class="fa fa-home" aria-hidden="true"/></span><h2>Your workspace is ready</h2><p>Use the available summaries and quick actions to get started.</p><small>Contact your administrator if you need Work Management access.</small></section>
+                    </main>
+                    <aside class="ba_side_column" aria-label="Progress and quick actions">
+                        <section t-if="d.can_work" class="ba_panel ba_progress_panel">
+                            <div class="ba_panel_heading"><div><span class="ba_section_kicker" t-esc="d.manager ? 'TEAM MOMENTUM' : 'YOUR MOMENTUM'"/><h2>Monthly progress</h2></div><span class="ba_panel_icon"><i class="fa fa-pie-chart" aria-hidden="true"/></span></div>
+                            <div class="ba_progress_ring" role="progressbar" aria-label="Monthly work completion" t-att-aria-valuenow="d.completion_percent" aria-valuemin="0" aria-valuemax="100" t-att-style="'--ba-progress:' + d.completion_percent + '%' "><div><strong><t t-esc="d.completion_percent"/><small>%</small></strong><span>Completed</span></div></div>
+                            <div class="ba_progress_caption"><strong t-esc="d.month_label"/><p><t t-esc="d.month_done"/> of <t t-esc="d.month_total"/> work items completed</p></div>
+                            <div class="ba_progress_legend"><span><i class="ba_legend_dot"/>Completed <strong t-esc="d.month_done"/></span><span><i class="ba_legend_dot ba_legend_remaining"/>Remaining <strong t-esc="d.month_total - d.month_done"/></span></div>
+                            <p class="ba_panel_footnote">Based on Work Date in the active company</p>
+                        </section>
+                        <section class="ba_panel ba_actions_panel"><div class="ba_panel_heading"><div><span class="ba_section_kicker">MAKE YOUR NEXT MOVE</span><h2>Quick actions</h2></div><span class="ba_panel_icon"><i class="fa fa-bolt" aria-hidden="true"/></span></div><nav class="ba_shortcuts" aria-label="HRMS shortcuts"><button t-foreach="d.shortcuts" t-as="link" t-key="link.key" class="ba_shortcut" t-on-click="() => this.openSection(link.key)"><span class="ba_shortcut_icon"><i t-att-class="'fa ' + link.icon" aria-hidden="true"/></span><span t-esc="link.label"/><i class="fa fa-angle-right ba_shortcut_arrow" aria-hidden="true"/></button></nav></section>
+                        <div class="ba_scope_note"><i class="fa fa-shield" aria-hidden="true"/><p>Made for your role.<br/><span>Your overview reflects your access and active company.</span></p></div>
+                    </aside>
+                </div>
+                <footer class="ba_footer"><span>ADC HRMS <span class="ba_footer_dot">·</span> Your people. Your workplace.</span><span><i class="fa fa-refresh me-1" aria-hidden="true"/>Refresh to see the latest changes</span></footer>
             </t>
         </div>
     </div>

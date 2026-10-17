@@ -131,6 +131,25 @@ class TestWorkScheduling(TransactionCase):
         data = dashboard.get_overview()['schedule']['shifts']
         self.assertEqual([item['id'] for item in data], shift.ids)
 
+    def test_dashboard_shift_navigation_and_day_counts(self):
+        shift = self.shift(start='2027-01-11 22:00:00', end='2027-01-12 06:00:00')
+        shift.action_publish()
+        dashboard = self.env['binaryaid.hrms.dashboard'].with_user(self.alice)
+        self.assertEqual(dashboard.open_shift(shift.id)['res_id'], shift.id)
+        with self.assertRaises(AccessError):
+            dashboard.with_user(self.bob).open_shift(shift.id)
+        draft = self.shift()
+        with self.assertRaises(AccessError):
+            dashboard.open_shift(draft.id)
+        now = fields.Datetime.now()
+        current = self.shift(start=now - timedelta(minutes=30), end=now + timedelta(hours=2))
+        current.action_publish()
+        schedule = dashboard.get_overview()['schedule']
+        self.assertEqual(len(schedule['days']), 7)
+        self.assertEqual(sum(day['today'] for day in schedule['days']), 1)
+        self.assertTrue(any(day['count'] for day in schedule['days']))
+        self.assertTrue(schedule['shifts'][0]['time_label'])
+
     def test_notice_and_dst_elapsed_hours(self):
         shift = self.shift(start='2020-01-01 00:00:00', end='2020-01-01 08:00:00', notice_hours=168)
         with self.assertRaises(ValidationError):
@@ -166,7 +185,7 @@ class TestScheduleBrowser(HttpCase):
                 }
                 throw new Error('Missing element: ' + selector);
             };
-            await waitFor('.ba_dashboard table');
+            await waitFor('.ba_shift_card');
             if (!document.querySelector('.ba_dashboard').textContent.includes('Browser roster shift')) {
                 throw new Error('Published shift missing from dashboard');
             }
