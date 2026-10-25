@@ -20,7 +20,7 @@ class HrmsDashboard(models.AbstractModel):
             specs['missing_signout'] = ('hr.attendance', _('Missing sign-outs'), [
                 ('employee_id.company_id', '=', self.env.company.id), ('check_out', '=', False),
                 ('employee_id', 'not in', self._running_employee_ids(now))],
-                'fa-sign-out', 'red', _('Signed in with no running shift'))
+                'fa-sign-out', 'red', _('No running shift'))
         if self._is_shift_admin():
             specs['timesheets'] = ('binaryaid.work.shift', _('Timesheet reviews'), [
                 ('company_id', '=', self.env.company.id), ('state', '=', 'published'),

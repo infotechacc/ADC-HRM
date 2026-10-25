@@ -9,6 +9,11 @@ from odoo.addons.binaryaid_hrms_dashboard.models.dashboard import ATTENTION_LIMI
 class HrmsDashboard(models.AbstractModel):
     _inherit = 'binaryaid.hrms.dashboard'
 
+    def _shift_form_view(self, shift=None):
+        if shift is None or shift.state == 'draft':
+            return self.env.ref('binaryaid_care.view_shift_quick_form').id
+        return super()._shift_form_view(shift)
+
     def _is_admin(self):
         # Care reviewers (e.g. clinical leads) use the administration view for incidents and notes.
         return super()._is_admin() or self.env.user.has_group('binaryaid_care.group_care_reviewer')
@@ -38,6 +43,14 @@ class HrmsDashboard(models.AbstractModel):
             specs['documents'] = ('binaryaid.care.document', _('Document alerts'), document_domain,
                                   'fa-id-card-o', 'red', _('Expired or expiring soon'))
         if self._is_shift_admin():
+            today_start, horizon_end = self._utc_bounds(fields.Date.context_today(self), 14)
+            if 'unpublished' in specs:
+                model, label, domain, icon, tone, hint = specs['unpublished']
+                specs['unpublished'] = (model, label, domain + [('employee_id', '!=', False)], icon, tone, hint)
+            specs['unfilled'] = ('binaryaid.work.shift', _('Unfilled shifts'), [
+                ('company_id', '=', self.env.company.id), ('state', '=', 'draft'), ('employee_id', '=', False),
+                ('end', '>', today_start), ('start', '<', horizon_end)],
+                'fa-user-times', 'red', _('Next 14 days'))
             specs['client_requests'] = ('binaryaid.care.client.request', _('Client requests'), [
                 ('company_id', '=', self.env.company.id), ('state', 'in', ['submitted', 'in_review', 'approved'])],
                 'fa-inbox', 'amber', _('To review or schedule'))
@@ -51,7 +64,8 @@ class HrmsDashboard(models.AbstractModel):
     def _card_keys(self, admin):
         keys = super()._card_keys(admin)
         if admin:
-            keys.insert(1, 'client_requests')
+            keys.insert(1, 'unfilled')
+            keys.insert(2, 'client_requests')
         else:
             keys.insert(0, 'messages')
         return keys
@@ -97,11 +111,36 @@ class HrmsDashboard(models.AbstractModel):
                 'count': self.env['binaryaid.care.document'].search_count(domain), 'items': items,
                 'empty': _('No documents are expired or expiring soon.')}
 
+    def _unfilled_tab(self, domain):
+        shifts = self.env['binaryaid.work.shift'].search(domain, order='start, id', limit=ATTENTION_LIMIT)
+        tz = self._viewer_tz()
+        items = [{
+            'source': 'shift', 'id': s.id, 'title': s.client_id.name or s.name,
+            'subtitle': s.service_location_id.name or s.location or _('No location'),
+            'meta': '%s · %s' % (format_datetime(self.env, s.start, tz=tz, dt_format='EEE d MMM'), self._time_label(s)),
+            'tone': 'red', 'warning': '', 'actions': [{'name': 'open', 'label': _('Assign worker'), 'style': 'success'}],
+        } for s in shifts]
+        return {'key': 'unfilled', 'label': _('Unfilled'), 'icon': 'fa-user-times',
+                'count': self.env['binaryaid.work.shift'].search_count(domain), 'items': items,
+                'empty': _('Every shift in the next 14 days has a worker.')}
+
     def _attention_tabs(self, specs):
         tabs = super()._attention_tabs(specs)
         if 'client_requests' in specs:
             tabs.insert(0, self._request_tab(specs['client_requests'][2]))
+        if 'unfilled' in specs:
+            tabs.insert(0, self._unfilled_tab(specs['unfilled'][2]))
         return tabs
+
+    def _shift_chip(self, shift):
+        chip = super()._shift_chip(shift)
+        chip['client'] = shift.client_id.name or ''
+        return chip
+
+    def _shift_status(self, shift, now):
+        if not shift.employee_id:
+            return 'unfilled', _('Unfilled'), 'red'
+        return super()._shift_status(shift, now)
 
     def _quick_actions(self, admin):
         actions = super()._quick_actions(admin)
@@ -131,9 +170,24 @@ class HrmsDashboard(models.AbstractModel):
         for row in (data.get('today') or {}).get('rows', []):
             shift = self.env['binaryaid.work.shift'].browse(row['id'])
             row['client'] = shift.client_id.name or ''
+            if not shift.employee_id:
+                row.update(employee=_('Unfilled'), initials='?')
         for item in (data.get('schedule') or {}).get('shifts', []):
+            # The worker sees client name, times, approved location and the shift plan only.
             shift = self.env['binaryaid.work.shift'].browse(item['id'])
+            location = shift.service_location_id.sudo()
             item['client'] = shift.client_id.sudo().name or ''
+            item['plan'] = (shift.instructions or '').strip()
+            item['address'] = location.address_text() if location else ''
+            item['map_url'] = location.map_url or ''
+        if self.env.user.employee_id and not data['admin']:
+            unread = (data.get('messages') or {}).get('unread', 0)
+            data['worker_nav'] = [
+                {'key': 'work_schedule', 'label': _('My shifts'), 'icon': 'fa-calendar', 'badge': 0},
+                {'key': 'team_messages', 'label': _('Team messages'), 'icon': 'fa-bullhorn', 'badge': unread},
+                {'key': 'my_leave', 'label': _('Leave'), 'icon': 'fa-plane', 'badge': 0},
+                {'key': 'profile', 'label': _('My profile'), 'icon': 'fa-user-o', 'badge': 0},
+            ]
         for link in data['shortcuts']:
             if link['key'] == 'discuss':
                 link['label'] = _('Chat')

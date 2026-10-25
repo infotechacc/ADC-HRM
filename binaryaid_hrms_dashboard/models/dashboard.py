@@ -171,6 +171,7 @@ class HrmsDashboard(models.AbstractModel):
         if admin:
             data['attention'] = self._attention_tabs(specs)
         if 'hr.leave' in self.env and user.employee_id and not admin:
+            data['my_leave'] = self._own_leave()
             data['shortcuts'].append({'key': 'my_leave', 'label': _('My leave'), 'icon': 'fa-calendar-minus-o'})
         if admin and 'employees' in specs:
             data['shortcuts'].append({'key': 'employees', 'label': _('Employees'), 'icon': 'fa-users'})
@@ -201,6 +202,22 @@ class HrmsDashboard(models.AbstractModel):
                 'status': _('Completed') if task.state == '1_done' else _('In progress'),
             })
         return data
+
+    def _own_leave_domain(self):
+        today = fields.Date.context_today(self)
+        return [('employee_id.user_id', '=', self.env.uid), '|', ('state', 'in', ['confirm', 'validate1']),
+                '&', ('state', '=', 'validate'), ('request_date_to', '>=', today)]
+
+    def _own_leave(self):
+        leaves = self.env['hr.leave'].search(self._own_leave_domain(), order='request_date_from', limit=5)
+        tones = {'confirm': 'amber', 'validate1': 'amber', 'validate': 'green'}
+        states = dict(self.env['hr.leave']._fields['state']._description_selection(self.env))
+        return [{'id': leave.id, 'type': leave.holiday_status_id.name,
+                 'dates': '%s – %s' % (format_date(self.env, leave.request_date_from, date_format='EEE d MMM'),
+                                       format_date(self.env, leave.request_date_to, date_format='EEE d MMM')),
+                 'duration': leave.duration_display, 'state': states.get(leave.state, leave.state),
+                 'tone': tones.get(leave.state, 'muted'), 'can_cancel': leave.can_cancel}
+                for leave in leaves]
 
     @api.model
     @api.readonly
@@ -252,6 +269,11 @@ class HrmsDashboard(models.AbstractModel):
 
     def _attention_record(self, source, res_id):
         """Re-find an inbox record through the same server-owned domain that listed it."""
+        if source == 'my_leave' and 'hr.leave' in self.env:
+            leave = self.env['hr.leave'].search(self._own_leave_domain() + [('id', '=', res_id)], limit=1)
+            if not leave:
+                raise AccessError(_('This leave request is not available to you.'))
+            return leave
         specs = self._specifications()
         key = {'leave': 'leave', 'document': 'documents'}.get(source)
         if key not in specs or (source == 'leave' and not self._can_approve_leave()):
@@ -269,6 +291,10 @@ class HrmsDashboard(models.AbstractModel):
         record = self._attention_record(source, res_id)
         if name == 'open':
             return self._dialog(record)
+        if source == 'my_leave' and name == 'cancel':
+            if not record.can_cancel:
+                raise AccessError(_('This leave request can no longer be cancelled here. Contact your coordinator.'))
+            return record.action_cancel()
         if source == 'leave' and name == 'approve':
             record.action_approve()
             return True

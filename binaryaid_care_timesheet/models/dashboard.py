@@ -15,7 +15,7 @@ class HrmsDashboard(models.AbstractModel):
             specs['timesheets'] = ('binaryaid.care.timesheet', _('Timesheet reviews'), [
                 ('company_id', '=', self.env.company.id), ('state', 'in', ['draft', 'review']),
                 ('period_end', '<', fields.Date.context_today(self))],
-                'fa-check-square-o', 'blue', _('Ended fortnights to approve'))
+                'fa-check-square-o', 'blue', _('Ended fortnights'))
         return specs
 
     def _timesheet_tab(self, domain):

@@ -6,6 +6,8 @@ from odoo.tools import format_datetime
 
 from odoo.addons.binaryaid_hrms_dashboard.models.dashboard import ATTENTION_LIMIT
 
+from odoo.addons.binaryaid_care.models.tools import get_param
+
 from .attendance import EXCEPTION_KINDS
 
 
@@ -28,11 +30,11 @@ class HrmsDashboard(models.AbstractModel):
         return specs
 
     def _card_keys(self, admin):
-        keys = super()._card_keys(admin)
         if admin:
-            keys[keys.index('missing_signout') + 1:keys.index('missing_signout') + 1] = ['exceptions', 'missing_notes']
-            keys.append('incidents')
-        return keys
+            # Operational figures only; drafts, notes, documents and incidents are in Action items.
+            return ['shifts_today', 'attendance', 'unfilled', 'client_requests', 'missing_signout',
+                    'exceptions', 'leave', 'timesheets', 'recruitment']
+        return super()._card_keys(admin)
 
     def _exception_tab(self, domain):
         records = self.env['binaryaid.care.attendance.exception'].search(domain, limit=ATTENTION_LIMIT)
@@ -98,8 +100,9 @@ class HrmsDashboard(models.AbstractModel):
     def _clock_payload(self):
         clock = self.env['binaryaid.care.clock']
         shift, attendance = clock.current_shift()
+        early = int(get_param(self.env, 'clock_in_early_minutes'))
         if not shift:
-            return {'action': False}
+            return {'action': False, 'early': early}
         signed_in = bool(attendance and attendance.binaryaid_shift_id == shift)
         tz = self._viewer_tz()
         note = self.env['binaryaid.care.shift.note'].sudo().search([('shift_id', '=', shift.id)], limit=1)
@@ -109,6 +112,9 @@ class HrmsDashboard(models.AbstractModel):
             'action': 'out' if signed_in else ('blocked' if attendance else 'in'),
             'shift_id': shift.id, 'title': shift.client_id.name or shift.name, 'time_label': self._time_label(shift),
             'location': shift.service_location_id.name or shift.location or '',
+            'address': shift.service_location_id.address_text() if shift.service_location_id else '',
+            'map_url': shift.service_location_id.map_url or '', 'plan': (shift.instructions or '').strip(),
+            'early': early,
             'since': format_datetime(self.env, attendance.check_in, tz=tz, dt_format='HH:mm') if signed_in else '',
             'note_draft': note.state == 'draft' if note else False, 'pending_exception': bool(pending),
             'kinds': [{'key': k, 'label': label} for k, label in EXCEPTION_KINDS],
@@ -119,7 +125,17 @@ class HrmsDashboard(models.AbstractModel):
     def get_overview(self):
         data = super().get_overview()
         data['clock'] = self._clock_payload() if (not data['admin'] and self.env.user.employee_id) else None
+        if data.get('worker_nav') is not None:
+            data['worker_nav'].insert(1, {'key': 'my_incidents', 'label': _('Incident forms'),
+                                          'icon': 'fa-exclamation-triangle', 'badge': 0})
         return data
+
+    @api.model
+    @api.readonly
+    def open_section(self, key):
+        if key == 'my_incidents':
+            return self.env['ir.actions.actions']._for_xml_id('binaryaid_care_attendance.action_my_incidents')
+        return super().open_section(key)
 
     @api.model
     def quick_action(self, key, date=None):

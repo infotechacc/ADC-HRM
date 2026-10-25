@@ -118,6 +118,10 @@ class Incident(models.Model):
             incident.attachment_ids.sudo().write({'res_model': self._name, 'res_id': incident.id})
             incident._validate_attachments()
             incident._escalate()
+            if incident.reported_by_id.partner_id and not incident.reported_by_id._is_superuser():
+                incident.sudo().message_notify(
+                    partner_ids=incident.reported_by_id.partner_id.ids, subject=_('Incident report received'),
+                    body=_('Your incident report was received. Reference: %s. A care reviewer will follow up.', incident.name))
         return incidents
 
     def write(self, vals):
