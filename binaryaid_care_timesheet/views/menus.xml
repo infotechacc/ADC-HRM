@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_care_timesheets_root" name="Timesheets" parent="binaryaid_care.menu_care_root" sequence="55"/>
+    <menuitem id="menu_care_timesheets" name="Fortnightly Timesheets" parent="menu_care_timesheets_root" action="action_timesheets" sequence="10" groups="binaryaid_work_management.group_work_admin"/>
+    <menuitem id="menu_care_timesheet_generate" name="Generate Timesheets" parent="menu_care_timesheets_root" action="action_timesheet_generate" sequence="20" groups="binaryaid_work_management.group_work_admin"/>
+    <menuitem id="menu_care_my_timesheets" name="My Timesheets" parent="menu_care_timesheets_root" action="action_my_timesheets" sequence="30"/>
+    <menuitem id="menu_report_planned_actual" name="Planned versus Actual Hours" parent="binaryaid_care.menu_care_reports" action="action_report_planned_actual" sequence="30" groups="binaryaid_work_management.group_work_admin"/>
+    <menuitem id="menu_report_approved_timesheets" name="Approved Timesheets (Export)" parent="binaryaid_care.menu_care_reports" action="action_timesheets" sequence="35" groups="binaryaid_work_management.group_work_admin"/>
+</odoo>

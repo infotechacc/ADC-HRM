@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_timesheet_user,care.timesheet.user,model_binaryaid_care_timesheet,binaryaid_work_management.group_work_user,1,0,0,0
+access_timesheet_admin,care.timesheet.admin,model_binaryaid_care_timesheet,binaryaid_work_management.group_work_admin,1,1,1,1
+access_line_user,care.timesheet.line.user,model_binaryaid_care_timesheet_line,binaryaid_work_management.group_work_user,1,0,0,0
+access_line_admin,care.timesheet.line.admin,model_binaryaid_care_timesheet_line,binaryaid_work_management.group_work_admin,1,0,0,0
+access_generate_admin,care.timesheet.generate,model_binaryaid_care_timesheet_generate,binaryaid_work_management.group_work_admin,1,1,1,0
+access_adjust_admin,care.timesheet.adjust,model_binaryaid_care_timesheet_adjust,binaryaid_work_management.group_work_admin,1,1,1,0
+access_correction_user,care.timesheet.correction,model_binaryaid_care_timesheet_correction,binaryaid_work_management.group_work_user,1,1,1,0

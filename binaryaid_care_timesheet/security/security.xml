@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_timesheet_company" model="ir.rule">
+        <field name="name">Timesheets: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_timesheet"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_timesheet_own" model="ir.rule">
+        <field name="name">Timesheets: own</field>
+        <field name="model_id" ref="model_binaryaid_care_timesheet"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_user'))]"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_timesheet_admin" model="ir.rule">
+        <field name="name">Timesheets: administrators</field>
+        <field name="model_id" ref="model_binaryaid_care_timesheet"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="rule_line_company" model="ir.rule">
+        <field name="name">Timesheet rows: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_timesheet_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_line_own" model="ir.rule">
+        <field name="name">Timesheet rows: own</field>
+        <field name="model_id" ref="model_binaryaid_care_timesheet_line"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_user'))]"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_line_admin" model="ir.rule">
+        <field name="name">Timesheet rows: administrators</field>
+        <field name="model_id" ref="model_binaryaid_care_timesheet_line"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+</odoo>

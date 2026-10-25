@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_timesheet_generate_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.timesheet.generate.form</field><field name="model">binaryaid.care.timesheet.generate</field>
+        <field name="arch" type="xml">
+            <form string="Generate fortnightly timesheets">
+                <group><field name="date"/><field name="period_start"/><field name="period_end"/></group>
+                <p class="text-muted">Creates or refreshes open timesheets for every employee with published shifts in this fortnight. Approved and locked timesheets are not changed.</p>
+                <footer><button name="action_generate" type="object" string="Generate" class="btn-primary"/><button string="Cancel" special="cancel"/></footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_timesheet_generate" model="ir.actions.act_window">
+        <field name="name">Generate Timesheets</field><field name="res_model">binaryaid.care.timesheet.generate</field>
+        <field name="view_mode">form</field><field name="target">new</field>
+    </record>
+    <record id="view_timesheet_adjust_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.timesheet.adjust.form</field><field name="model">binaryaid.care.timesheet.adjust</field>
+        <field name="arch" type="xml">
+            <form string="Adjust hours">
+                <div class="alert alert-info" role="status">The original attendance is kept. The adjustment and your reason are stored beside it.</div>
+                <group><field name="line_id"/><field name="actual_hours"/><field name="clear"/>
+                    <field name="hours" widget="float_time" invisible="clear"/><field name="reason"/></group>
+                <footer><button name="action_apply" type="object" string="Apply" class="btn-primary"/><button string="Cancel" special="cancel"/></footer>
+            </form>
+        </field>
+    </record>
+    <record id="view_timesheet_correction_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.timesheet.correction.form</field><field name="model">binaryaid.care.timesheet.correction</field>
+        <field name="arch" type="xml">
+            <form string="Request correction">
+                <group><field name="line_id"/><field name="note"/></group>
+                <footer><button name="action_request" type="object" string="Request" class="btn-primary"/><button string="Cancel" special="cancel"/></footer>
+            </form>
+        </field>
+    </record>
+</odoo>

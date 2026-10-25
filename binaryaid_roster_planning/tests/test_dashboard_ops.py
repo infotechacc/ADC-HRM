@@ -62,11 +62,13 @@ class TestDashboardOperations(TransactionCase):
         ended._roster_transition_write({'state': 'published', 'published_at': now - timedelta(days=1)})
         data, cards, tabs = self.overview()
         self.assertIn(attendance.id, [item['id'] for item in tabs['missing_signout']['items']])
-        self.assertIn(ended.id, [item['id'] for item in tabs['timesheets']['items']])
         self.assertGreaterEqual(cards['missing_signout'], 1)
-        self.assertGreaterEqual(cards['timesheets'], 1)
         dashboard = self.dashboard.with_user(self.admin)
-        self.assertEqual(dashboard.item_action('timesheet', ended.id, 'reconcile')['res_model'], 'binaryaid.roster.actual.wizard')
+        # The fortnightly timesheet add-on replaces per-shift reconciliation as the review queue.
+        if 'binaryaid.care.timesheet' not in self.env:
+            self.assertIn(ended.id, [item['id'] for item in tabs['timesheets']['items']])
+            self.assertGreaterEqual(cards['timesheets'], 1)
+            self.assertEqual(dashboard.item_action('timesheet', ended.id, 'reconcile')['res_model'], 'binaryaid.roster.actual.wizard')
         self.assertEqual(dashboard.item_action('attendance', attendance.id, 'open')['res_model'], 'hr.attendance')
         attendance.check_out = now
         with self.assertRaises(AccessError):
