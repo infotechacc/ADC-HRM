@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_care_form" model="ir.ui.view">
+        <field name="name">hr.employee.care.form</field><field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_binaryaid_documents" type="object" class="oe_stat_button" icon="fa-id-card-o" groups="hr.group_hr_user">
+                    <field name="binaryaid_document_issue_count" widget="statinfo" string="Document issues"/>
+                </button>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Care employment" name="binaryaid_care" groups="hr.group_hr_user">
+                    <group>
+                        <group><field name="binaryaid_employee_code"/><field name="binaryaid_employment_type"/><field name="binaryaid_employment_status"/></group>
+                        <group><field name="department_id" string="Team"/><field name="emergency_contact"/><field name="emergency_phone"/></group>
+                    </group>
+                    <separator string="Worker documents"/>
+                    <field name="binaryaid_document_ids" readonly="1" context="{'list_view_ref': 'binaryaid_care.view_care_document_list'}"/>
+                    <separator string="Client assignments"/>
+                    <field name="binaryaid_client_shift_ids" readonly="1">
+                        <list limit="20"><field name="start"/><field name="end"/><field name="client_id"/><field name="location"/><field name="state" widget="badge"/></list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_employee_care_search" model="ir.ui.view">
+        <field name="name">hr.employee.care.search</field><field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after"><field name="binaryaid_employee_code" groups="hr.group_hr_user"/></xpath>
+        </field>
+    </record>
+</odoo>

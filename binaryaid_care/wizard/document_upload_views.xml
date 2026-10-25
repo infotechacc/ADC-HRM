@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_document_upload_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.document.upload.form</field>
+        <field name="model">binaryaid.care.document.upload</field>
+        <field name="arch" type="xml">
+            <form string="Upload new version">
+                <div class="alert alert-info" role="status">Files are checked for type, size and content before they are stored. Previous versions are kept.</div>
+                <group>
+                    <field name="document_id" readonly="1"/>
+                    <field name="file" filename="file_name"/>
+                    <field name="file_name" invisible="1"/>
+                    <field name="issue_date"/>
+                    <field name="expiry_date" required="requires_expiry"/>
+                    <field name="requires_expiry" invisible="1"/>
+                    <field name="note"/>
+                </group>
+                <footer>
+                    <button name="action_upload" type="object" string="Upload" class="btn-primary"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="view_document_review_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.document.review.form</field>
+        <field name="model">binaryaid.care.document.review</field>
+        <field name="arch" type="xml">
+            <form string="Reject version">
+                <group><field name="version_id"/><field name="note"/></group>
+                <footer>
+                    <button name="action_reject" type="object" string="Reject" class="btn-danger"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

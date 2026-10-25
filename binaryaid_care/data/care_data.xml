@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_client_request" model="ir.sequence">
+        <field name="name">Client support request</field>
+        <field name="code">binaryaid.care.client.request</field>
+        <field name="prefix">REQ/%(year)s/</field>
+        <field name="padding">4</field>
+    </record>
+
+    <record id="cron_document_retention" model="ir.cron">
+        <field name="name">Care documents: retention review</field>
+        <field name="model_id" ref="model_binaryaid_care_document"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_retention_review()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">weeks</field>
+    </record>
+
+    <!-- Default categories. ADC must confirm or rename them in Configuration; never overwritten on upgrade. -->
+    <data noupdate="1">
+        <record id="category_client_ndis_plan" model="binaryaid.care.document.category"><field name="name">NDIS / funding plan</field><field name="applies_to">client</field><field name="sequence">1</field><field name="requires_expiry" eval="True"/></record>
+        <record id="category_client_service_agreement" model="binaryaid.care.document.category"><field name="name">Service agreement</field><field name="applies_to">client</field><field name="sequence">2</field></record>
+        <record id="category_client_care_plan" model="binaryaid.care.document.category"><field name="name">Care / support plan</field><field name="applies_to">client</field><field name="sequence">3</field></record>
+        <record id="category_client_risk" model="binaryaid.care.document.category"><field name="name">Risk assessment</field><field name="applies_to">client</field><field name="sequence">4</field></record>
+        <record id="category_client_consent" model="binaryaid.care.document.category"><field name="name">Consent forms</field><field name="applies_to">client</field><field name="sequence">5</field></record>
+        <record id="category_client_medication" model="binaryaid.care.document.category"><field name="name">Medication plan</field><field name="applies_to">client</field><field name="sequence">6</field></record>
+        <record id="category_client_behaviour" model="binaryaid.care.document.category"><field name="name">Behaviour support plan</field><field name="applies_to">client</field><field name="sequence">7</field></record>
+        <record id="category_client_emergency" model="binaryaid.care.document.category"><field name="name">Emergency and health plan</field><field name="applies_to">client</field><field name="sequence">8</field></record>
+
+        <record id="category_worker_screening" model="binaryaid.care.document.category"><field name="name">NDIS Worker Screening Check</field><field name="applies_to">employee</field><field name="sequence">1</field><field name="requires_expiry" eval="True"/><field name="required" eval="True"/><field name="expiry_alert_days">60</field></record>
+        <record id="category_worker_wwcc" model="binaryaid.care.document.category"><field name="name">Working With Children Check</field><field name="applies_to">employee</field><field name="sequence">2</field><field name="requires_expiry" eval="True"/><field name="expiry_alert_days">60</field></record>
+        <record id="category_worker_first_aid" model="binaryaid.care.document.category"><field name="name">First Aid and CPR certificate</field><field name="applies_to">employee</field><field name="sequence">3</field><field name="requires_expiry" eval="True"/><field name="required" eval="True"/></record>
+        <record id="category_worker_licence" model="binaryaid.care.document.category"><field name="name">Driver licence</field><field name="applies_to">employee</field><field name="sequence">4</field><field name="requires_expiry" eval="True"/></record>
+        <record id="category_worker_police" model="binaryaid.care.document.category"><field name="name">National police check</field><field name="applies_to">employee</field><field name="sequence">5</field><field name="requires_expiry" eval="True"/></record>
+    </data>
+</odoo>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="binaryaid_care.DashboardMessages" t-inherit="binaryaid_hrms_dashboard.Dashboard" t-inherit-mode="extension">
+        <xpath expr="//nav[hasclass('ba_tiles')]" position="after">
+            <section t-if="!d.admin and d.messages and d.messages.items.length" class="ba_panel ba_messages_panel" aria-label="Team messages">
+                <div class="ba_panel_heading">
+                    <div><h2>Team messages</h2><p><t t-if="d.messages.unread"><strong t-esc="d.messages.unread"/> unread</t><t t-else="">All read</t></p></div>
+                    <button class="btn ba_text_action" t-on-click="() => this.openSection('team_messages')">View all<i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button>
+                </div>
+                <ul class="ba_message_list">
+                    <li t-foreach="d.messages.items" t-as="msg" t-key="msg.id">
+                        <button t-att-class="'ba_message' + (msg.read ? '' : ' is_unread')" t-on-click="() => this.itemAction({source: 'message', id: msg.id, title: msg.title}, {name: 'open', label: 'Open'})">
+                            <span class="ba_message_dot" aria-hidden="true"/>
+                            <span class="ba_message_text"><strong t-esc="msg.title"/><small t-esc="msg.date"/></span>
+                            <span t-if="msg.needs_ack" class="ba_badge ba_tone_amber">Acknowledge</span>
+                            <i class="fa fa-angle-right ba_chevron" aria-hidden="true"/>
+                        </button>
+                    </li>
+                </ul>
+            </section>
+        </xpath>
+    </t>
+</templates>

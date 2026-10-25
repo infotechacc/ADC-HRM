@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="privilege_care" model="res.groups.privilege">
+        <field name="name">Care Records</field>
+        <field name="category_id" ref="base.module_category_human_resources"/>
+    </record>
+    <!-- Care notes and incidents are protected separately from roster administration. -->
+    <record id="group_care_reviewer" model="res.groups">
+        <field name="name">Care Records Reviewer</field>
+        <field name="privilege_id" ref="privilege_care"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_admin'))]"/>
+    </record>
+
+    <!-- Company boundaries -->
+    <record id="rule_client_company" model="ir.rule">
+        <field name="name">Clients: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_client"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_location_company" model="ir.rule">
+        <field name="name">Service locations: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_service_location"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_document_company" model="ir.rule">
+        <field name="name">Care documents: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_document"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_request_company" model="ir.rule">
+        <field name="name">Client requests: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_client_request"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_announcement_company" model="ir.rule">
+        <field name="name">Team messages: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_announcement"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Clients and locations: workers only see clients of their own published shifts. -->
+    <record id="rule_client_worker" model="ir.rule">
+        <field name="name">Clients: workers see clients they are rostered to</field>
+        <field name="model_id" ref="model_binaryaid_care_client"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_user'))]"/>
+        <field name="domain_force">[('shift_ids', 'any', [('user_id', '=', user.id), ('state', '=', 'published')])]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_client_staff" model="ir.rule">
+        <field name="name">Clients: administrators and care reviewers</field>
+        <field name="model_id" ref="model_binaryaid_care_client"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_admin')), (4, ref('group_care_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="rule_location_worker" model="ir.rule">
+        <field name="name">Service locations: workers see locations of their shifts</field>
+        <field name="model_id" ref="model_binaryaid_care_service_location"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_user'))]"/>
+        <field name="domain_force">[('client_id.shift_ids', 'any', [('user_id', '=', user.id), ('state', '=', 'published')])]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_location_staff" model="ir.rule">
+        <field name="name">Service locations: administrators and care reviewers</field>
+        <field name="model_id" ref="model_binaryaid_care_service_location"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_admin')), (4, ref('group_care_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- Documents: client files for roster administrators, worker files for HR, own files for workers. -->
+    <record id="rule_document_own" model="ir.rule">
+        <field name="name">Care documents: own worker documents</field>
+        <field name="model_id" ref="model_binaryaid_care_document"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_document_client_admin" model="ir.rule">
+        <field name="name">Care documents: client documents for administrators</field>
+        <field name="model_id" ref="model_binaryaid_care_document"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_admin'))]"/>
+        <field name="domain_force">[('client_id', '!=', False)]</field>
+    </record>
+    <record id="rule_document_client_reviewer" model="ir.rule">
+        <field name="name">Care documents: client documents for care reviewers</field>
+        <field name="model_id" ref="model_binaryaid_care_document"/>
+        <field name="groups" eval="[(4, ref('group_care_reviewer'))]"/>
+        <field name="domain_force">[('client_id', '!=', False)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_document_worker_hr" model="ir.rule">
+        <field name="name">Care documents: worker documents for HR</field>
+        <field name="model_id" ref="model_binaryaid_care_document"/>
+        <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
+        <field name="domain_force">[('employee_id', '!=', False)]</field>
+    </record>
+    <record id="rule_version_company" model="ir.rule">
+        <field name="name">Document versions: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_document_version"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_version_own" model="ir.rule">
+        <field name="name">Document versions: own worker documents</field>
+        <field name="model_id" ref="model_binaryaid_care_document_version"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('document_id.employee_id.user_id', '=', user.id)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_version_client_reviewer" model="ir.rule">
+        <field name="name">Document versions: client documents for care reviewers</field>
+        <field name="model_id" ref="model_binaryaid_care_document_version"/>
+        <field name="groups" eval="[(4, ref('group_care_reviewer'))]"/>
+        <field name="domain_force">[('document_id.client_id', '!=', False)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_version_client_admin" model="ir.rule">
+        <field name="name">Document versions: client documents for administrators</field>
+        <field name="model_id" ref="model_binaryaid_care_document_version"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_admin'))]"/>
+        <field name="domain_force">[('document_id.client_id', '!=', False)]</field>
+    </record>
+    <record id="rule_version_worker_hr" model="ir.rule">
+        <field name="name">Document versions: worker documents for HR</field>
+        <field name="model_id" ref="model_binaryaid_care_document_version"/>
+        <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
+        <field name="domain_force">[('document_id.employee_id', '!=', False)]</field>
+    </record>
+    <record id="rule_access_company" model="ir.rule">
+        <field name="name">Document access logs: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_document_access"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_access_client_admin" model="ir.rule">
+        <field name="name">Document access logs: client documents for administrators</field>
+        <field name="model_id" ref="model_binaryaid_care_document_access"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_admin'))]"/>
+        <field name="domain_force">[('document_id.client_id', '!=', False)]</field>
+    </record>
+    <record id="rule_access_worker_hr" model="ir.rule">
+        <field name="name">Document access logs: worker documents for HR</field>
+        <field name="model_id" ref="model_binaryaid_care_document_access"/>
+        <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
+        <field name="domain_force">[('document_id.employee_id', '!=', False)]</field>
+    </record>
+
+    <!-- Client requests: portal users only see requests of clients they represent. -->
+    <record id="rule_request_portal" model="ir.rule">
+        <field name="name">Client requests: own client (portal)</field>
+        <field name="model_id" ref="model_binaryaid_care_client_request"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[('client_id.contact_ids', 'any', [('user_id', '=', user.id), ('is_authorised', '=', True)])]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Team messages: recipients see their own messages. -->
+    <record id="rule_announcement_recipient" model="ir.rule">
+        <field name="name">Team messages: recipients</field>
+        <field name="model_id" ref="model_binaryaid_care_announcement"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('state', '!=', 'draft'), ('recipient_ids.user_id', '=', user.id)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_announcement_admin" model="ir.rule">
+        <field name="name">Team messages: administrators</field>
+        <field name="model_id" ref="model_binaryaid_care_announcement"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="rule_recipient_own" model="ir.rule">
+        <field name="name">Message recipients: own receipt</field>
+        <field name="model_id" ref="model_binaryaid_care_announcement_recipient"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_recipient_admin" model="ir.rule">
+        <field name="name">Message recipients: administrators</field>
+        <field name="model_id" ref="model_binaryaid_care_announcement_recipient"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+</odoo>

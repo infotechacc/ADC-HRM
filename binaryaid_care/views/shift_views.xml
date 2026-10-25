@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_shift_care_form" model="ir.ui.view">
+        <field name="name">binaryaid.work.shift.care.form</field><field name="model">binaryaid.work.shift</field>
+        <field name="inherit_id" ref="binaryaid_work_scheduling.view_shift_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="attributes"><attribute name="js_class">binaryaid_shift_form</attribute></xpath>
+            <xpath expr="//field[@name='employee_id']" position="before">
+                <field name="client_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                <field name="service_location_id" readonly="state != 'draft'" options="{'no_create': True}" context="{'short_location': True}" invisible="not client_id"/>
+                <field name="client_request_id" readonly="state != 'draft'" options="{'no_create': True}" invisible="not client_id" groups="binaryaid_work_management.group_work_admin"/>
+            </xpath>
+            <xpath expr="//field[@name='location']" position="attributes">
+                <attribute name="readonly">state != 'draft' or service_location_id</attribute>
+            </xpath>
+            <xpath expr="//field[@name='location']" position="after">
+                <field name="location_verified" invisible="not service_location_id" string="Location verified"/>
+                <field name="binaryaid_revision" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='instructions']" position="attributes">
+                <attribute name="placeholder">Shift plan: the support to deliver on this shift</attribute>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Client requirements" name="client_requirements" invisible="not client_id" groups="binaryaid_work_management.group_work_admin">
+                    <field name="client_requirements" readonly="1"/>
+                    <separator string="Approved requests"/>
+                    <field name="approved_request_ids" readonly="1">
+                        <list><field name="name"/><field name="preferred_date_from"/><field name="preferred_start_time" widget="float_time"/><field name="preferred_end_time" widget="float_time"/><field name="location_id"/><field name="state"/></list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_shift_care_list" model="ir.ui.view">
+        <field name="name">binaryaid.work.shift.care.list</field><field name="model">binaryaid.work.shift</field>
+        <field name="inherit_id" ref="binaryaid_work_scheduling.view_shift_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='employee_name']" position="after"><field name="client_id"/></xpath>
+        </field>
+    </record>
+    <record id="view_shift_care_search" model="ir.ui.view">
+        <field name="name">binaryaid.work.shift.care.search</field><field name="model">binaryaid.work.shift</field>
+        <field name="inherit_id" ref="binaryaid_work_scheduling.view_shift_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <field name="client_id"/>
+                <filter name="no_client" string="Without client" domain="[('client_id', '=', False)]"/>
+                <group><filter name="group_client" string="Client" context="{'group_by': 'client_id'}"/></group>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_shift_care_calendar" model="ir.ui.view">
+        <field name="name">binaryaid.work.shift.care.calendar</field><field name="model">binaryaid.work.shift</field>
+        <field name="inherit_id" ref="binaryaid_work_scheduling.view_shift_calendar"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='employee_name']" position="after"><field name="client_id"/></xpath>
+        </field>
+    </record>
+</odoo>

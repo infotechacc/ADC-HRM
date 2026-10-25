@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_leave_care_form" model="ir.ui.view">
+        <field name="name">hr.leave.care.form</field><field name="model">hr.leave</field>
+        <field name="inherit_id" ref="hr_holidays.hr_leave_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <field name="binaryaid_conflict_count" invisible="1"/>
+                <div class="alert alert-warning mb-0" role="alert" invisible="not binaryaid_conflict_count or state not in ('confirm', 'validate1')">
+                    <strong>Staffing resolution required.</strong> This leave overlaps published shifts. Reassign or cancel them before approving.
+                    <field name="binaryaid_conflict_summary" class="d-block mt-1" style="white-space: pre-wrap;" readonly="1"/>
+                    <button name="action_binaryaid_open_conflicts" type="object" string="Open affected shifts" class="btn btn-link p-0" groups="binaryaid_work_management.group_work_admin"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

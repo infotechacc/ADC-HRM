@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_service_location_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.service.location.form</field><field name="model">binaryaid.care.service.location</field>
+        <field name="arch" type="xml">
+            <form string="Service location">
+                <header>
+                    <button name="action_verify_coordinates" type="object" string="Mark coordinates verified" class="btn-primary" invisible="coordinates_verified"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" placeholder="e.g. Home, Day centre"/></h1></div>
+                    <group>
+                        <group string="Address"><field name="client_id" readonly="id"/><field name="street"/><field name="city"/><field name="state_id"/><field name="zip"/><field name="country_id"/></group>
+                        <group string="Location verification">
+                            <field name="latitude"/><field name="longitude"/><field name="radius_m"/><field name="timezone"/>
+                            <field name="coordinates_verified"/><field name="verified_by_id" invisible="not coordinates_verified"/><field name="verified_on" invisible="not coordinates_verified"/>
+                            <field name="map_url" widget="url" invisible="not map_url" string="Map"/>
+                        </group>
+                    </group>
+                    <div class="text-muted small">Sign in and sign out are accepted only within the clock radius of these coordinates. Changing coordinates removes verification.</div>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_care_client_list" model="ir.ui.view">
+        <field name="name">binaryaid.care.client.list</field><field name="model">binaryaid.care.client</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="status != 'active'">
+                <field name="reference"/><field name="name"/><field name="status" widget="badge" decoration-success="status == 'active'" decoration-warning="status == 'on_hold'"/>
+                <field name="shift_count" string="Shifts" optional="show"/><field name="request_count" string="Open requests" optional="show"/>
+                <field name="document_issue_count" optional="show"/><field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_care_client_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.client.form</field><field name="model">binaryaid.care.client</field>
+        <field name="arch" type="xml">
+            <form string="Client">
+                <header><field name="status" widget="statusbar" options="{'clickable': '1'}"/></header>
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button name="action_open_shifts" type="object" class="oe_stat_button" icon="fa-calendar"><field name="shift_count" widget="statinfo" string="Shifts"/></button>
+                        <button name="action_open_requests" type="object" class="oe_stat_button" icon="fa-inbox"><field name="request_count" widget="statinfo" string="Open requests"/></button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <div class="oe_title"><label for="name"/><h1><field name="name" placeholder="Client / participant name"/></h1></div>
+                    <group>
+                        <group><field name="reference"/><field name="date_of_birth"/><field name="company_id" groups="base.group_multi_company"/></group>
+                        <group><field name="phone" widget="phone"/><field name="email" widget="email"/></group>
+                    </group>
+                    <notebook>
+                        <page string="Care requirements" name="care">
+                            <field name="care_requirements" placeholder="Approved care requirements, routines and support preferences…"/>
+                        </page>
+                        <page string="Service locations" name="locations">
+                            <field name="location_ids" context="{'default_client_id': id}">
+                                <list decoration-warning="not coordinates_verified">
+                                    <field name="sequence" widget="handle"/><field name="name"/><field name="street"/><field name="city"/>
+                                    <field name="latitude"/><field name="longitude"/><field name="radius_m"/><field name="timezone"/>
+                                    <field name="coordinates_verified" widget="boolean_toggle" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Authorised contacts" name="contacts">
+                            <field name="contact_ids" context="{'default_client_id': id}">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/><field name="name"/><field name="contact_type"/><field name="relationship"/>
+                                    <field name="phone"/><field name="email"/><field name="is_authorised"/><field name="user_id" readonly="1"/>
+                                    <field name="portal_active" column_invisible="1"/>
+                                    <button name="action_grant_portal" type="object" string="Grant portal" icon="fa-unlock" invisible="portal_active"/>
+                                    <button name="action_revoke_portal" type="object" string="Revoke portal" icon="fa-lock" invisible="not portal_active"/>
+                                </list>
+                            </field>
+                            <div class="text-muted small">Portal logins can submit support needs and see their own request status only. They cannot see workers, attendance or HR files.</div>
+                        </page>
+                        <page string="Documents" name="documents">
+                            <button name="action_prepare_documents" type="object" string="Add missing categories" class="btn-link" icon="fa-plus"/>
+                            <field name="document_ids" readonly="1" context="{'list_view_ref': 'binaryaid_care.view_care_document_list'}"/>
+                        </page>
+                        <page string="Internal notes" name="notes"><field name="internal_notes"/></page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_care_client_search" model="ir.ui.view">
+        <field name="name">binaryaid.care.client.search</field><field name="model">binaryaid.care.client</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" filter_domain="['|', ('name', 'ilike', self), ('reference', 'ilike', self)]"/>
+                <filter name="active_clients" string="Active" domain="[('status', '=', 'active')]"/>
+                <filter name="on_hold" string="On hold" domain="[('status', '=', 'on_hold')]"/>
+                <separator/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group><filter name="group_status" string="Status" context="{'group_by': 'status'}"/></group>
+            </search>
+        </field>
+    </record>
+    <record id="action_care_client" model="ir.actions.act_window">
+        <field name="name">Clients</field><field name="res_model">binaryaid.care.client</field>
+        <field name="view_mode">list,form</field><field name="path">care-clients</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Add your first client</p><p>Keep each participant's ID, contacts, care requirements, service locations and documents in one place.</p></field>
+    </record>
+</odoo>

@@ -1,0 +1,10 @@
+.ba_dashboard {
+    .ba_messages_panel { margin-bottom: 20px; max-width: 980px; }
+    .ba_message_list { list-style: none; margin: 0; padding: 0; }
+    .ba_message { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; border: 0; border-bottom: 1px solid #edf1f3; background: transparent; padding: 10px 4px; color: inherit;
+        &:hover, &:focus-visible { background: #f5f9f9; }
+        &.is_unread { .ba_message_dot { background: var(--ba-accent); } strong { font-weight: 700; } } }
+    .ba_message_list li:last-child .ba_message { border-bottom: 0; }
+    .ba_message_dot { width: 8px; height: 8px; border-radius: 50%; background: transparent; flex-shrink: 0; }
+    .ba_message_text { flex: 1; min-width: 0; display: flex; flex-direction: column; strong { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; } small { color: var(--ba-muted); font-size: 12px; } }
+}

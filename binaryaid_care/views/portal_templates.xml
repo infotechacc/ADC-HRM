@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_breadcrumbs_care" inherit_id="portal.portal_breadcrumbs" priority="45">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="page_name in ('care_requests', 'care_request', 'care_request_new')" t-attf-class="breadcrumb-item #{'active' if page_name == 'care_requests' else ''}">
+                <a t-if="page_name != 'care_requests'" href="/my/support-requests">Support requests</a>
+                <t t-else="">Support requests</t>
+            </li>
+            <li t-if="page_name == 'care_request'" class="breadcrumb-item active"><t t-esc="care_request.name"/></li>
+            <li t-if="page_name == 'care_request_new'" class="breadcrumb-item active">New request</li>
+        </xpath>
+    </template>
+
+    <template id="portal_my_home_care" inherit_id="portal.portal_my_home" priority="45">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
+            <t t-set="portal_client_category_enable" t-value="True"/>
+        </xpath>
+        <div id="portal_client_category" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/web/static/img/folder.svg'"/>
+                <t t-set="title">Support requests</t>
+                <t t-set="url" t-value="'/my/support-requests'"/>
+                <t t-set="text">Request support and follow the status of your requests</t>
+                <t t-set="placeholder_count" t-value="'care_request_count'"/>
+            </t>
+        </div>
+    </template>
+
+    <template id="portal_care_state_badge">
+        <t t-set="badge" t-value="{'submitted': 'text-bg-info', 'in_review': 'text-bg-warning', 'approved': 'text-bg-success', 'scheduled': 'text-bg-success', 'declined': 'text-bg-danger', 'cancelled': 'text-bg-secondary'}"/>
+        <span t-attf-class="badge rounded-pill #{badge.get(record.state, 'text-bg-light')}" t-field="record.state"/>
+    </template>
+
+    <template id="portal_my_care_requests" name="My support requests">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <t t-call="portal.portal_searchbar"><t t-set="title">Support requests</t></t>
+            <div class="d-flex justify-content-between align-items-center my-3">
+                <p class="text-muted mb-0">Submit support needs for ADC to review. ADC confirms the worker and time once a shift is scheduled.</p>
+                <a t-if="care_clients" href="/my/support-requests/new" class="btn btn-primary"><i class="fa fa-plus me-1"/>New request</a>
+            </div>
+            <div t-if="not care_requests" class="alert alert-info" role="status">You have not submitted any support requests yet.</div>
+            <t t-if="care_requests" t-call="portal.portal_table">
+                <thead><tr><th>Reference</th><th>For</th><th>Preferred date</th><th>Submitted</th><th class="text-end">Status</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="care_requests" t-as="record">
+                        <td><a t-attf-href="/my/support-requests/#{record.id}" t-esc="record.name"/></td>
+                        <td t-esc="record.sudo().client_id.name"/>
+                        <td><span t-field="record.preferred_date_from"/></td>
+                        <td><span t-field="record.create_date" t-options="{'widget': 'date'}"/></td>
+                        <td class="text-end"><t t-call="binaryaid_care.portal_care_state_badge"/></td>
+                    </tr>
+                </tbody>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_my_care_request" name="Support request">
+        <t t-call="portal.portal_layout">
+            <t t-set="record" t-value="care_request"/>
+            <div class="card my-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><t t-esc="record.name"/></h4>
+                    <t t-call="binaryaid_care.portal_care_state_badge"/>
+                </div>
+                <div class="card-body">
+                    <div t-if="request.params.get('created')" class="alert alert-success" role="status">Thank you. Your request was submitted for review.</div>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">Client</dt><dd class="col-sm-9" t-esc="record.sudo().client_id.name"/>
+                        <dt class="col-sm-3">Preferred dates</dt><dd class="col-sm-9"><span t-field="record.preferred_date_from"/><t t-if="record.preferred_date_to"> – <span t-field="record.preferred_date_to"/></t></dd>
+                        <dt class="col-sm-3">Preferred time</dt><dd class="col-sm-9"><span t-field="record.preferred_start_time" t-options="{'widget': 'float_time'}"/> – <span t-field="record.preferred_end_time" t-options="{'widget': 'float_time'}"/></dd>
+                        <dt class="col-sm-3">Location</dt><dd class="col-sm-9"><t t-esc="location_name or ''"/> <t t-esc="record.location_note or ''"/></dd>
+                        <dt class="col-sm-3">Support needs</dt><dd class="col-sm-9" style="white-space: pre-wrap;" t-esc="record.support_needs"/>
+                        <dt class="col-sm-3" t-if="record.instructions">Instructions</dt><dd class="col-sm-9" t-if="record.instructions" style="white-space: pre-wrap;" t-esc="record.instructions"/>
+                        <dt class="col-sm-3" t-if="record.review_note">ADC response</dt><dd class="col-sm-9" t-if="record.review_note" style="white-space: pre-wrap;" t-esc="record.review_note"/>
+                    </dl>
+                </div>
+                <div class="card-footer" t-if="record.state in ('submitted', 'in_review')">
+                    <form t-attf-action="/my/support-requests/#{record.id}/cancel" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Cancel this request</button>
+                    </form>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_care_request_new" name="New support request">
+        <t t-call="portal.portal_layout">
+            <h3 class="my-3">Request support</h3>
+            <div t-if="error" class="alert alert-danger" role="alert" t-esc="error"/>
+            <form action="/my/support-requests/new" method="post" class="card card-body">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="client_id">Client</label>
+                        <select class="form-select" name="client_id" id="client_id" required="required">
+                            <option t-foreach="care_clients" t-as="client" t-att-value="client.id" t-att-selected="str(client.id) == post.get('client_id')" t-esc="client.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="location_id">Service location</label>
+                        <select class="form-select" name="location_id" id="location_id">
+                            <option value="">Not sure / other</option>
+                            <option t-foreach="locations" t-as="loc" t-att-value="loc.id" t-att-selected="str(loc.id) == post.get('location_id')"><t t-esc="loc.client_id.name"/> – <t t-esc="loc.name"/></option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="support_needs">Support needed</label>
+                        <textarea class="form-control" name="support_needs" id="support_needs" rows="4" required="required" maxlength="4000" t-esc="post.get('support_needs', '')"/>
+                    </div>
+                    <div class="col-md-3"><label class="form-label" for="preferred_date_from">Preferred date</label><input type="date" class="form-control" name="preferred_date_from" id="preferred_date_from" required="required" t-att-value="post.get('preferred_date_from')"/></div>
+                    <div class="col-md-3"><label class="form-label" for="preferred_date_to">Until (optional)</label><input type="date" class="form-control" name="preferred_date_to" id="preferred_date_to" t-att-value="post.get('preferred_date_to')"/></div>
+                    <div class="col-md-3"><label class="form-label" for="preferred_start_time">From</label><input type="time" class="form-control" name="preferred_start_time" id="preferred_start_time" t-att-value="post.get('preferred_start_time')"/></div>
+                    <div class="col-md-3"><label class="form-label" for="preferred_end_time">To</label><input type="time" class="form-control" name="preferred_end_time" id="preferred_end_time" t-att-value="post.get('preferred_end_time')"/></div>
+                    <div class="col-12"><label class="form-label" for="location_note">Other location or access details</label><input type="text" class="form-control" name="location_note" id="location_note" maxlength="255" t-att-value="post.get('location_note')"/></div>
+                    <div class="col-12"><label class="form-label" for="instructions">Instructions for ADC</label><textarea class="form-control" name="instructions" id="instructions" rows="3" maxlength="4000" t-esc="post.get('instructions', '')"/></div>
+                </div>
+                <div class="mt-3 d-flex gap-2"><button type="submit" class="btn btn-primary">Submit request</button><a href="/my/support-requests" class="btn btn-secondary">Cancel</a></div>
+                <p class="text-muted small mt-3 mb-0">ADC reviews every request before scheduling. Worker allocation is managed by ADC.</p>
+            </form>
+        </t>
+    </template>
+</odoo>
