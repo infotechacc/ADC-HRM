@@ -5,6 +5,8 @@ from odoo import fields, http
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
 
+from odoo.addons.binaryaid_work_scheduling.models.dashboard import name_parts
+
 PDF = b'%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF'
 
 
@@ -270,6 +272,7 @@ class TestCareGaps(CareCase):
         tab = next(t for t in data['attention'] if t['key'] == 'unfilled')
         self.assertIn(shift.id, [i['id'] for i in tab['items']])
         self.assertNotIn(shift.id, [i['id'] for t in data['attention'] if t['key'] == 'unpublished' for i in t['items']])
+        self.assertEqual(name_parts('[DEMO] Mei Lin Zhang'), ['Mei', 'Lin', 'Zhang'])
         chips = [c for day in data['coverage']['days'] for c in day['items'] if c['id'] == shift.id]
         self.assertTrue(chips and chips[0]['unfilled'] and chips[0]['client'] == self.client.name)
         self.assertEqual(dashboard.item_action('shift', shift.id, 'open')['views'][0][0],

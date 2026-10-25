@@ -11,6 +11,11 @@ from odoo.addons.binaryaid_hrms_dashboard.models.dashboard import ATTENTION_LIMI
 ROSTER_DAYS = 14
 
 
+def name_parts(name):
+    """Words of a person's name, ignoring tags such as "[DEMO]" for initials and short names."""
+    return [part for part in (name or '').split() if not (part.startswith('[') and part.endswith(']'))]
+
+
 class HrmsDashboard(models.AbstractModel):
     _inherit = 'binaryaid.hrms.dashboard'
 
@@ -140,7 +145,7 @@ class HrmsDashboard(models.AbstractModel):
         for shift in shifts:
             status, label, tone = self._shift_status(shift, now)
             rows.append({'id': shift.id, 'employee': shift.employee_name, 'name': shift.name,
-                         'initials': ''.join(part[0] for part in (shift.employee_name or '?').split()[:2]).upper(),
+                         'initials': ''.join(part[0] for part in name_parts(shift.employee_name)[:2]).upper() or '?',
                          'time_label': self._time_label(shift), 'location': shift.location or '',
                          'hours': round(shift.planned_hours, 2), 'state': shift.state,
                          'status': status, 'status_label': label, 'tone': tone})
@@ -166,8 +171,8 @@ class HrmsDashboard(models.AbstractModel):
 
     def _shift_chip(self, shift):
         name = shift.employee_name or ''
-        parts = name.split()
-        short = ('%s %s.' % (parts[0], parts[-1][0])) if len(parts) > 1 else name
+        parts = name_parts(name)
+        short = ('%s %s.' % (parts[0], parts[-1][0])) if len(parts) > 1 else (parts[0] if parts else name)
         return {'id': shift.id, 'time': format_datetime(self.env, shift.start, tz=self._viewer_tz(), dt_format='HH:mm'),
                 'worker': short, 'title': shift.name, 'state': shift.state, 'unfilled': not shift.employee_id}
 
