@@ -41,6 +41,7 @@
                                 <t t-esc="qa.label"/><span t-if="qa.key === 'tab:client_requests' and cardValue('client_requests')" class="badge rounded-pill text-bg-danger ms-2" t-esc="cardValue('client_requests')"/>
                             </button>
                         </t>
+                        <button t-if="d.account_url" type="button" class="btn btn-secondary ba_account_btn" t-on-click="openAccount"><i class="fa fa-user-circle-o me-2" aria-hidden="true"/>My account</button>
                         <button type="button" class="btn btn-light ba_refresh" t-on-click="load" t-att-disabled="state.loading" title="Refresh" aria-label="Refresh"><i t-att-class="'fa fa-refresh' + (state.loading ? ' fa-spin' : '')" aria-hidden="true"/></button>
                     </div>
                 </header>
@@ -167,6 +168,7 @@
                             <span class="ba_header_sub" t-esc="d.today_label"/>
                             <h1 t-esc="d.user_name"/>
                         </div>
+                        <button t-if="d.account_url" type="button" class="btn btn-light ba_account_btn ms-auto me-2" t-on-click="openAccount" title="My account" aria-label="My account"><i class="fa fa-user-circle-o" aria-hidden="true"/></button>
                         <button type="button" class="btn btn-light ba_refresh" t-on-click="load" t-att-disabled="state.loading" title="Refresh" aria-label="Refresh"><i t-att-class="'fa fa-refresh' + (state.loading ? ' fa-spin' : '')" aria-hidden="true"/></button>
                     </header>
 

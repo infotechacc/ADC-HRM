@@ -164,6 +164,10 @@ export class HrmsDashboard extends Component {
         return (this.state.data?.schedule?.shifts || []).filter((shift) => !shift.past);
     }
     noop() {}
+    openAccount() {
+        // The branded account page opens in a new tab so the dashboard stays open.
+        return this.action.doAction({ type: "ir.actions.act_url", url: this.state.data.account_url, target: "new" });
+    }
     colorFor(name) {
         let hash = 0;
         for (const char of name || "") {

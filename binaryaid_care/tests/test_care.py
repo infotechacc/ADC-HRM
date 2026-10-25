@@ -256,6 +256,25 @@ class TestCarePortal(HttpCase):
         self.assertIn(created.name, listing)
         self.assertNotIn(hidden.name, listing)
         self.assertNotIn(hidden.name, self.url_open('/my/support-requests/%s' % hidden.id).text)
+        # Branded portal: /my leads contacts to the ADC home, which never shows Odoo branding.
+        home = self.url_open('/my')
+        self.assertTrue(home.url.endswith('/my/care'))
+        self.assertIn('Request support', home.text)
+        self.assertIn('Portal Client', home.text)
+        self.assertNotIn('Powered by', home.text)
+        self.assertIn(created.name, home.text)
+        detail = self.url_open('/my/support-requests/%s' % created.id).text
+        self.assertIn('adc_timeline', detail)
+        account = self.url_open('/my/care/account', data={'csrf_token': http.Request.csrf_token(self), 'form': 'details', 'phone': '0400 123 456'})
+        self.assertIn('Your phone number was saved', account.text)
+        self.assertEqual(contact.user_id.partner_id.phone, '0400 123 456')
+        wrong = self.url_open('/my/care/account', data={'csrf_token': http.Request.csrf_token(self), 'form': 'password',
+                                                    'old': 'nope', 'new1': 'new-pass-123', 'new2': 'new-pass-123'})
+        self.assertIn('incorrect', wrong.text)
+        changed = self.url_open('/my/care/account', data={'csrf_token': http.Request.csrf_token(self), 'form': 'password',
+                                                      'old': 'portal-rep-pass', 'new1': 'new-pass-123', 'new2': 'new-pass-123'})
+        self.assertIn('Your password was changed', changed.text)
+        self.assertIn('My account', self.url_open('/my/care').text, 'still signed in after changing the password')
         # Employee HR files, shifts and attendance are not reachable for client logins.
         for model in ('hr.employee', 'binaryaid.work.shift', 'hr.attendance'):
             with self.assertRaises(AccessError):

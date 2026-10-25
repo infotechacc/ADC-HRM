@@ -1,16 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <template id="portal_breadcrumbs_care" inherit_id="portal.portal_breadcrumbs" priority="45">
-        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
-            <li t-if="page_name in ('care_requests', 'care_request', 'care_request_new')" t-attf-class="breadcrumb-item #{'active' if page_name == 'care_requests' else ''}">
-                <a t-if="page_name != 'care_requests'" href="/my/support-requests">Support requests</a>
-                <t t-else="">Support requests</t>
-            </li>
-            <li t-if="page_name == 'care_request'" class="breadcrumb-item active"><t t-esc="care_request.name"/></li>
-            <li t-if="page_name == 'care_request_new'" class="breadcrumb-item active">New request</li>
-        </xpath>
-    </template>
-
+    <!-- Odoo's own /my page: the Support requests tile is always shown to authorised contacts. -->
     <template id="portal_my_home_care" inherit_id="portal.portal_my_home" priority="45">
         <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
             <t t-set="portal_client_category_enable" t-value="True"/>
@@ -22,103 +12,296 @@
                 <t t-set="url" t-value="'/my/support-requests'"/>
                 <t t-set="text">Request support and follow the status of your requests</t>
                 <t t-set="placeholder_count" t-value="'care_request_count'"/>
+                <t t-set="config_card" t-value="care_is_contact"/>
             </t>
         </div>
     </template>
 
-    <template id="portal_care_state_badge">
-        <t t-set="badge" t-value="{'submitted': 'text-bg-info', 'in_review': 'text-bg-warning', 'approved': 'text-bg-success', 'scheduled': 'text-bg-success', 'declined': 'text-bg-danger', 'cancelled': 'text-bg-secondary'}"/>
-        <span t-attf-class="badge rounded-pill #{badge.get(record.state, 'text-bg-light')}" t-field="record.state"/>
-    </template>
-
-    <template id="portal_my_care_requests" name="My support requests">
-        <t t-call="portal.portal_layout">
-            <t t-set="breadcrumbs_searchbar" t-value="True"/>
-            <t t-call="portal.portal_searchbar"><t t-set="title">Support requests</t></t>
-            <div class="d-flex justify-content-between align-items-center my-3">
-                <p class="text-muted mb-0">Submit support needs for ADC to review. ADC confirms the worker and time once a shift is scheduled.</p>
-                <a t-if="care_clients" href="/my/support-requests/new" class="btn btn-primary"><i class="fa fa-plus me-1"/>New request</a>
+    <!-- ============================================================ ADC client portal layout -->
+    <template id="client_layout" name="ADC client portal">
+        <t t-call="web.frontend_layout">
+            <t t-set="title">ADC client portal</t>
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            <div class="adc_client">
+                <header class="adc_top">
+                    <div class="adc_wrap adc_top_inner">
+                        <a href="/my/care" class="adc_brand">
+                            <span class="adc_logo">ADC</span>
+                            <span class="adc_brand_text"><strong>Australian Diversity Care</strong><small>Client portal</small></span>
+                        </a>
+                        <nav class="adc_nav" aria-label="Main">
+                            <a t-if="care_clients" href="/my/care" t-att-class="'adc_nav_link' + (' is_active' if page == 'home' else '')"><i class="fa fa-home" aria-hidden="true"/> Home</a>
+                            <a t-if="care_clients" href="/my/support-requests" t-att-class="'adc_nav_link' + (' is_active' if page == 'requests' else '')"><i class="fa fa-list-ul" aria-hidden="true"/> My requests</a>
+                            <a t-if="care_clients" href="/my/support-requests/new" t-att-class="'adc_nav_link' + (' is_active' if page == 'new' else '')"><i class="fa fa-plus-circle" aria-hidden="true"/> New request</a>
+                            <a href="/my/care/account" t-att-class="'adc_nav_link' + (' is_active' if page == 'account' else '')"><i class="fa fa-user-circle-o" aria-hidden="true"/> My account</a>
+                        </nav>
+                        <div class="adc_user">
+                            <span class="adc_avatar" t-esc="(first_name or 'U')[:1].upper()"/>
+                            <span class="adc_user_name" t-esc="user.name.replace('[DEMO] ', '')"/>
+                            <a href="/web/session/logout?redirect=/web/login" class="adc_logout" title="Log out"><i class="fa fa-sign-out" aria-hidden="true"/><span class="adc_logout_text"> Log out</span></a>
+                        </div>
+                    </div>
+                </header>
+                <main class="adc_wrap adc_main">
+                    <t t-out="0"/>
+                </main>
+                <footer class="adc_footer">
+                    <div class="adc_wrap adc_footer_inner">
+                        <span>© <t t-esc="company.name"/></span>
+                        <span><t t-if="company.phone"><i class="fa fa-phone" aria-hidden="true"/> <t t-esc="company.phone"/></t>
+                            <t t-if="company.email"> · <i class="fa fa-envelope-o" aria-hidden="true"/> <t t-esc="company.email"/></t></span>
+                    </div>
+                </footer>
             </div>
-            <div t-if="not care_requests" class="alert alert-info" role="status">You have not submitted any support requests yet.</div>
-            <t t-if="care_requests" t-call="portal.portal_table">
-                <thead><tr><th>Reference</th><th>For</th><th>Preferred date</th><th>Submitted</th><th class="text-end">Status</th></tr></thead>
-                <tbody>
-                    <tr t-foreach="care_requests" t-as="record">
-                        <td><a t-attf-href="/my/support-requests/#{record.id}" t-esc="record.name"/></td>
-                        <td t-esc="record.sudo().client_id.name"/>
-                        <td><span t-field="record.preferred_date_from"/></td>
-                        <td><span t-field="record.create_date" t-options="{'widget': 'date'}"/></td>
-                        <td class="text-end"><t t-call="binaryaid_care.portal_care_state_badge"/></td>
-                    </tr>
-                </tbody>
-            </t>
         </t>
     </template>
 
-    <template id="portal_my_care_request" name="Support request">
-        <t t-call="portal.portal_layout">
+    <template id="client_status">
+        <span t-att-class="'adc_pill adc_tone_' + tones.get(record.state, 'muted')"><span class="adc_dot"/><t t-esc="state_labels.get(record.state)"/></span>
+    </template>
+
+    <template id="client_request_row">
+        <a t-attf-href="/my/support-requests/#{record.id}" class="adc_row">
+            <span class="adc_date_tile">
+                <small t-esc="record.preferred_date_from.strftime('%b')"/>
+                <strong t-esc="record.preferred_date_from.day"/>
+            </span>
+            <span class="adc_row_body">
+                <strong t-esc="record.support_needs.splitlines()[0][:80] if record.support_needs else record.name"/>
+                <span class="adc_muted"><t t-esc="record.sudo().client_id.name"/> · <t t-esc="record.name"/>
+                    <t t-if="record.preferred_start_time or record.preferred_end_time"> · <t t-esc="'%02d:%02d' % (int(record.preferred_start_time), round(record.preferred_start_time % 1 * 60))"/>–<t t-esc="'%02d:%02d' % (int(record.preferred_end_time), round(record.preferred_end_time % 1 * 60))"/></t></span>
+            </span>
+            <t t-call="binaryaid_care.client_status"/>
+            <i class="fa fa-angle-right adc_chevron" aria-hidden="true"/>
+        </a>
+    </template>
+
+    <template id="client_visit_row">
+        <div class="adc_row is_static">
+            <span class="adc_date_tile is_green"><small t-esc="visit['month']"/><strong t-esc="visit['day']"/></span>
+            <span class="adc_row_body">
+                <strong><t t-esc="visit['weekday']"/> · <t t-esc="visit['time']"/></strong>
+                <span class="adc_muted"><t t-esc="visit['client']"/><t t-if="visit['place']"> · <t t-esc="visit['place']"/></t></span>
+            </span>
+            <span class="adc_pill adc_tone_green"><span class="adc_dot"/>Confirmed</span>
+        </div>
+    </template>
+
+    <!-- ============================================================ home -->
+    <template id="client_home" name="ADC client home">
+        <t t-call="binaryaid_care.client_layout">
+            <section class="adc_hero">
+                <div>
+                    <span class="adc_eyebrow">Welcome back</span>
+                    <h1>Hello, <t t-esc="first_name"/></h1>
+                    <p>Request support for <t t-esc="', '.join(care_clients.mapped('name'))"/> and follow every request in one place.</p>
+                </div>
+                <a href="/my/support-requests/new" class="adc_btn adc_btn_light adc_btn_lg"><i class="fa fa-plus" aria-hidden="true"/> Request support</a>
+            </section>
+
+            <section class="adc_stats">
+                <a href="/my/support-requests?status=open" class="adc_stat adc_tone_amber"><span class="adc_stat_icon"><i class="fa fa-hourglass-half" aria-hidden="true"/></span><span><strong t-esc="stats['open']"/><small>Open requests</small></span></a>
+                <a href="/my/support-requests?status=scheduled" class="adc_stat adc_tone_green"><span class="adc_stat_icon"><i class="fa fa-check-circle" aria-hidden="true"/></span><span><strong t-esc="stats['scheduled']"/><small>Scheduled</small></span></a>
+                <a href="#visits" class="adc_stat adc_tone_blue"><span class="adc_stat_icon"><i class="fa fa-calendar" aria-hidden="true"/></span><span><strong t-esc="stats['visits']"/><small>Upcoming visits</small></span></a>
+            </section>
+
+            <div class="adc_grid">
+                <section class="adc_card" id="visits">
+                    <div class="adc_card_head"><h2>Upcoming visits</h2></div>
+                    <div t-if="not visits" class="adc_empty"><i class="fa fa-calendar-o" aria-hidden="true"/><p>No visits are booked yet. Confirmed support appears here.</p></div>
+                    <t t-foreach="visits" t-as="visit"><t t-call="binaryaid_care.client_visit_row"/></t>
+                </section>
+                <section class="adc_card">
+                    <div class="adc_card_head"><h2>Recent requests</h2><a href="/my/support-requests" class="adc_link">View all <i class="fa fa-arrow-right" aria-hidden="true"/></a></div>
+                    <div t-if="not care_requests" class="adc_empty"><i class="fa fa-inbox" aria-hidden="true"/><p>You have not requested support yet.</p>
+                        <a href="/my/support-requests/new" class="adc_btn adc_btn_primary">Request support</a></div>
+                    <t t-foreach="care_requests" t-as="record"><t t-call="binaryaid_care.client_request_row"/></t>
+                </section>
+            </div>
+
+            <section class="adc_people">
+                <h2>People you support</h2>
+                <div class="adc_people_grid">
+                    <div t-foreach="people" t-as="person" class="adc_person">
+                        <span class="adc_person_avatar" t-esc="person['name'].replace('[DEMO] ', '')[:1]"/>
+                        <div>
+                            <strong t-esc="person['name']"/>
+                            <span t-if="person['address']" class="adc_muted d-block"><i class="fa fa-map-marker" aria-hidden="true"/> <t t-esc="person['address']"/></span>
+                            <span class="adc_muted d-block"><i class="fa fa-calendar-check-o" aria-hidden="true"/>
+                                <t t-if="person['next']">Next visit <t t-esc="person['next']['date']"/>, <t t-esc="person['next']['time']"/></t>
+                                <t t-else="">No visit booked</t></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="adc_help">
+                <i class="fa fa-life-ring" aria-hidden="true"/>
+                <div><strong>Need help or have an urgent change?</strong>
+                    <p>Contact the ADC office<t t-if="company.phone"> on <t t-esc="company.phone"/></t><t t-if="company.email"> or <t t-esc="company.email"/></t>. For emergencies call 000.</p></div>
+            </section>
+        </t>
+    </template>
+
+    <!-- ============================================================ list -->
+    <template id="client_requests" name="ADC client requests">
+        <t t-call="binaryaid_care.client_layout">
+            <div class="adc_page_head">
+                <div><h1>My requests</h1><p class="adc_muted">Every request you have made and where it is up to.</p></div>
+                <a t-if="care_clients" href="/my/support-requests/new" class="adc_btn adc_btn_primary"><i class="fa fa-plus" aria-hidden="true"/> New request</a>
+            </div>
+            <div class="adc_chips">
+                <a t-foreach="filters" t-as="f" t-attf-href="/my/support-requests?status=#{f[0]}" t-att-class="'adc_chip' + (' is_active' if status == f[0] else '')" t-esc="f[1]"/>
+            </div>
+            <section class="adc_card">
+                <div t-if="not care_requests" class="adc_empty"><i class="fa fa-inbox" aria-hidden="true"/><p>No requests here yet.</p></div>
+                <t t-foreach="care_requests" t-as="record"><t t-call="binaryaid_care.client_request_row"/></t>
+            </section>
+        </t>
+    </template>
+
+    <!-- ============================================================ detail -->
+    <template id="client_request" name="ADC client request">
+        <t t-call="binaryaid_care.client_layout">
             <t t-set="record" t-value="care_request"/>
-            <div class="card my-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0"><t t-esc="record.name"/></h4>
-                    <t t-call="binaryaid_care.portal_care_state_badge"/>
+            <a href="/my/support-requests" class="adc_back"><i class="fa fa-arrow-left" aria-hidden="true"/> My requests</a>
+            <div t-if="created" class="adc_alert adc_tone_green"><i class="fa fa-check-circle" aria-hidden="true"/> Thank you. Your request was submitted for review. We will let you know when it changes.</div>
+            <section class="adc_card adc_detail">
+                <div class="adc_detail_head">
+                    <div><span class="adc_eyebrow" t-esc="record.name"/><h1 t-esc="record.support_needs.splitlines()[0][:90] if record.support_needs else record.name"/>
+                        <span class="adc_muted">For <t t-esc="client_name"/> · Submitted <t t-esc="record.create_date.strftime('%d %b %Y')"/></span></div>
+                    <t t-call="binaryaid_care.client_status"/>
                 </div>
-                <div class="card-body">
-                    <div t-if="request.params.get('created')" class="alert alert-success" role="status">Thank you. Your request was submitted for review.</div>
-                    <dl class="row mb-0">
-                        <dt class="col-sm-3">Client</dt><dd class="col-sm-9" t-esc="record.sudo().client_id.name"/>
-                        <dt class="col-sm-3">Preferred dates</dt><dd class="col-sm-9"><span t-field="record.preferred_date_from"/><t t-if="record.preferred_date_to"> – <span t-field="record.preferred_date_to"/></t></dd>
-                        <dt class="col-sm-3">Preferred time</dt><dd class="col-sm-9"><span t-field="record.preferred_start_time" t-options="{'widget': 'float_time'}"/> – <span t-field="record.preferred_end_time" t-options="{'widget': 'float_time'}"/></dd>
-                        <dt class="col-sm-3">Location</dt><dd class="col-sm-9"><t t-esc="location_name or ''"/> <t t-esc="record.location_note or ''"/></dd>
-                        <dt class="col-sm-3">Support needs</dt><dd class="col-sm-9" style="white-space: pre-wrap;" t-esc="record.support_needs"/>
-                        <dt class="col-sm-3" t-if="record.instructions">Instructions</dt><dd class="col-sm-9" t-if="record.instructions" style="white-space: pre-wrap;" t-esc="record.instructions"/>
-                        <dt class="col-sm-3" t-if="record.review_note">ADC response</dt><dd class="col-sm-9" t-if="record.review_note" style="white-space: pre-wrap;" t-esc="record.review_note"/>
-                    </dl>
+                <ol t-if="record.state not in ('declined', 'cancelled')" class="adc_timeline">
+                    <li t-foreach="timeline" t-as="step" t-att-class="'is_done' if step_index &lt;= reached else ''">
+                        <span class="adc_step_dot"><i t-if="step_index &lt;= reached" class="fa fa-check" aria-hidden="true"/><t t-else="" t-esc="step_index + 1"/></span>
+                        <span t-esc="step[1]"/>
+                    </li>
+                </ol>
+                <div t-if="record.state == 'declined'" class="adc_alert adc_tone_red"><i class="fa fa-info-circle" aria-hidden="true"/> ADC could not provide this support. See the response below.</div>
+                <div t-if="record.state == 'cancelled'" class="adc_alert adc_tone_muted"><i class="fa fa-ban" aria-hidden="true"/> This request was cancelled.</div>
+                <div class="adc_facts">
+                    <div><small>Preferred date</small><strong><t t-esc="record.preferred_date_from.strftime('%A %d %B %Y')"/><t t-if="record.preferred_date_to"> – <t t-esc="record.preferred_date_to.strftime('%d %B')"/></t></strong></div>
+                    <div><small>Preferred time</small><strong t-if="record.preferred_start_time or record.preferred_end_time"><t t-esc="'%02d:%02d' % (int(record.preferred_start_time), round(record.preferred_start_time % 1 * 60))"/> – <t t-esc="'%02d:%02d' % (int(record.preferred_end_time), round(record.preferred_end_time % 1 * 60))"/></strong><strong t-else="">Any time</strong></div>
+                    <div><small>Location</small><strong t-esc="location_name or record.location_note or 'To be confirmed'"/></div>
                 </div>
-                <div class="card-footer" t-if="record.state in ('submitted', 'in_review')">
-                    <form t-attf-action="/my/support-requests/#{record.id}/cancel" method="post">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <button type="submit" class="btn btn-outline-danger btn-sm">Cancel this request</button>
-                    </form>
-                </div>
+                <h3>Support needed</h3>
+                <p class="adc_text" t-esc="record.support_needs"/>
+                <t t-if="record.instructions"><h3>Your instructions</h3><p class="adc_text" t-esc="record.instructions"/></t>
+                <div t-if="record.review_note" class="adc_response"><h3><i class="fa fa-comment-o" aria-hidden="true"/> Response from ADC</h3><p class="adc_text" t-esc="record.review_note"/></div>
+                <t t-if="visits"><h3>Confirmed visits</h3><t t-foreach="visits" t-as="visit"><t t-call="binaryaid_care.client_visit_row"/></t></t>
+                <form t-if="record.state in ('submitted', 'in_review')" t-attf-action="/my/support-requests/#{record.id}/cancel" method="post" class="adc_cancel">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <span class="adc_muted">Changed your mind? You can cancel until ADC approves the request.</span>
+                    <button type="submit" class="adc_btn adc_btn_danger_outline">Cancel this request</button>
+                </form>
+            </section>
+        </t>
+    </template>
+
+    <!-- ============================================================ new request -->
+    <template id="client_request_new" name="ADC new support request">
+        <t t-call="binaryaid_care.client_layout">
+            <div class="adc_page_head"><div><h1>Request support</h1><p class="adc_muted">Tell us what you need. ADC reviews every request and confirms the visit with you.</p></div></div>
+            <div t-if="error" class="adc_alert adc_tone_red"><i class="fa fa-exclamation-circle" aria-hidden="true"/> <t t-esc="error"/></div>
+            <div class="adc_form_grid">
+                <form action="/my/support-requests/new" method="post" class="adc_card adc_form">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <fieldset>
+                        <legend><span class="adc_step">1</span> Who is the support for?</legend>
+                        <div class="adc_choice_grid">
+                            <label t-foreach="care_clients" t-as="client" class="adc_choice">
+                                <input type="radio" name="client_id" t-att-value="client.id" required="required"
+                                       t-att-checked="str(client.id) == post.get('client_id') or (len(care_clients) == 1) or None"/>
+                                <span class="adc_choice_box"><span class="adc_person_avatar" t-esc="client.name.replace('[DEMO] ', '')[:1]"/><strong t-esc="client.name"/></span>
+                            </label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend><span class="adc_step">2</span> What support is needed?</legend>
+                        <textarea class="adc_input" name="support_needs" id="support_needs" rows="4" required="required" maxlength="4000"
+                                  placeholder="For example: help with shopping and preparing lunch" t-esc="post.get('support_needs', '')"/>
+                    </fieldset>
+                    <fieldset>
+                        <legend><span class="adc_step">3</span> When?</legend>
+                        <div class="adc_fields">
+                            <label>Preferred date<input type="date" class="adc_input" name="preferred_date_from" id="preferred_date_from" required="required" t-att-min="today" t-att-value="post.get('preferred_date_from')"/></label>
+                            <label>Until (optional)<input type="date" class="adc_input" name="preferred_date_to" id="preferred_date_to" t-att-min="today" t-att-value="post.get('preferred_date_to')"/></label>
+                            <label>From<input type="time" class="adc_input" name="preferred_start_time" id="preferred_start_time" t-att-value="post.get('preferred_start_time')"/></label>
+                            <label>To<input type="time" class="adc_input" name="preferred_end_time" id="preferred_end_time" t-att-value="post.get('preferred_end_time')"/></label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend><span class="adc_step">4</span> Where?</legend>
+                        <div class="adc_fields">
+                            <label>Service location
+                                <select class="adc_input" name="location_id" id="location_id">
+                                    <option value="">Not sure / somewhere else</option>
+                                    <option t-foreach="locations" t-as="loc" t-att-value="loc.id" t-att-selected="str(loc.id) == post.get('location_id') or None"><t t-esc="loc.client_id.name"/> – <t t-esc="loc.name"/></option>
+                                </select>
+                            </label>
+                            <label>Other place or access details<input type="text" class="adc_input" name="location_note" id="location_note" maxlength="255" placeholder="For example: side gate, unit 4" t-att-value="post.get('location_note')"/></label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend><span class="adc_step">5</span> Anything else we should know?</legend>
+                        <textarea class="adc_input" name="instructions" id="instructions" rows="3" maxlength="4000" placeholder="Preferences, parking, pets, who to call on arrival" t-esc="post.get('instructions', '')"/>
+                    </fieldset>
+                    <div class="adc_form_actions">
+                        <button type="submit" class="adc_btn adc_btn_primary adc_btn_lg"><i class="fa fa-paper-plane" aria-hidden="true"/> Submit request</button>
+                        <a href="/my/care" class="adc_btn adc_btn_ghost">Cancel</a>
+                    </div>
+                </form>
+                <aside class="adc_card adc_next">
+                    <h2>What happens next</h2>
+                    <ol class="adc_next_steps">
+                        <li><strong>We review your request</strong><span>Usually within one business day.</span></li>
+                        <li><strong>We find a support worker</strong><span>ADC matches a suitable worker.</span></li>
+                        <li><strong>You see the confirmed visit</strong><span>The request shows "Scheduled" with the date and time.</span></li>
+                    </ol>
+                    <p class="adc_muted">For urgent changes please call the ADC office.</p>
+                </aside>
             </div>
         </t>
     </template>
 
-    <template id="portal_care_request_new" name="New support request">
-        <t t-call="portal.portal_layout">
-            <h3 class="my-3">Request support</h3>
-            <div t-if="error" class="alert alert-danger" role="alert" t-esc="error"/>
-            <form action="/my/support-requests/new" method="post" class="card card-body">
-                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label" for="client_id">Client</label>
-                        <select class="form-select" name="client_id" id="client_id" required="required">
-                            <option t-foreach="care_clients" t-as="client" t-att-value="client.id" t-att-selected="str(client.id) == post.get('client_id')" t-esc="client.name"/>
-                        </select>
+    <!-- ============================================================ account -->
+    <template id="client_account" name="ADC my account">
+        <t t-call="binaryaid_care.client_layout">
+            <div class="adc_page_head"><div><h1>My account</h1><p class="adc_muted">Your details and password.</p></div></div>
+            <div t-if="success" class="adc_alert adc_tone_green"><i class="fa fa-check-circle" aria-hidden="true"/> <t t-esc="success"/></div>
+            <div class="adc_grid">
+                <section class="adc_card adc_profile">
+                    <div class="adc_profile_head">
+                        <span class="adc_avatar is_large" t-esc="(first_name or 'U')[:1].upper()"/>
+                        <div><h2 t-esc="user.name"/><span class="adc_muted" t-esc="user.email or user.login"/></div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label" for="location_id">Service location</label>
-                        <select class="form-select" name="location_id" id="location_id">
-                            <option value="">Not sure / other</option>
-                            <option t-foreach="locations" t-as="loc" t-att-value="loc.id" t-att-selected="str(loc.id) == post.get('location_id')"><t t-esc="loc.client_id.name"/> – <t t-esc="loc.name"/></option>
-                        </select>
+                    <form method="post" action="/my/care/account" class="adc_form">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="form" value="details"/>
+                        <label>Phone<input type="tel" class="adc_input" name="phone" t-att-value="partner.phone"/></label>
+                        <button type="submit" class="adc_btn adc_btn_primary">Save details</button>
+                    </form>
+                    <div class="adc_account_links">
+                        <a t-if="care_clients" href="/my/support-requests" class="adc_btn adc_btn_ghost"><i class="fa fa-list-ul" aria-hidden="true"/> My requests</a>
+                        <a href="/web/session/logout?redirect=/web/login" class="adc_btn adc_btn_ghost"><i class="fa fa-sign-out" aria-hidden="true"/> Log out</a>
                     </div>
-                    <div class="col-12">
-                        <label class="form-label" for="support_needs">Support needed</label>
-                        <textarea class="form-control" name="support_needs" id="support_needs" rows="4" required="required" maxlength="4000" t-esc="post.get('support_needs', '')"/>
-                    </div>
-                    <div class="col-md-3"><label class="form-label" for="preferred_date_from">Preferred date</label><input type="date" class="form-control" name="preferred_date_from" id="preferred_date_from" required="required" t-att-value="post.get('preferred_date_from')"/></div>
-                    <div class="col-md-3"><label class="form-label" for="preferred_date_to">Until (optional)</label><input type="date" class="form-control" name="preferred_date_to" id="preferred_date_to" t-att-value="post.get('preferred_date_to')"/></div>
-                    <div class="col-md-3"><label class="form-label" for="preferred_start_time">From</label><input type="time" class="form-control" name="preferred_start_time" id="preferred_start_time" t-att-value="post.get('preferred_start_time')"/></div>
-                    <div class="col-md-3"><label class="form-label" for="preferred_end_time">To</label><input type="time" class="form-control" name="preferred_end_time" id="preferred_end_time" t-att-value="post.get('preferred_end_time')"/></div>
-                    <div class="col-12"><label class="form-label" for="location_note">Other location or access details</label><input type="text" class="form-control" name="location_note" id="location_note" maxlength="255" t-att-value="post.get('location_note')"/></div>
-                    <div class="col-12"><label class="form-label" for="instructions">Instructions for ADC</label><textarea class="form-control" name="instructions" id="instructions" rows="3" maxlength="4000" t-esc="post.get('instructions', '')"/></div>
-                </div>
-                <div class="mt-3 d-flex gap-2"><button type="submit" class="btn btn-primary">Submit request</button><a href="/my/support-requests" class="btn btn-secondary">Cancel</a></div>
-                <p class="text-muted small mt-3 mb-0">ADC reviews every request before scheduling. Worker allocation is managed by ADC.</p>
-            </form>
+                </section>
+                <section class="adc_card">
+                    <div class="adc_card_head"><h2>Change password</h2></div>
+                    <form method="post" action="/my/care/account" class="adc_form">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="form" value="password"/>
+                        <div t-if="errors" class="adc_alert adc_tone_red"><i class="fa fa-exclamation-circle" aria-hidden="true"/>
+                            <t t-esc="errors"/></div>
+                        <label>Current password<input type="password" class="adc_input" name="old" autocomplete="current-password" required="required"/></label>
+                        <label>New password<input type="password" class="adc_input" name="new1" autocomplete="new-password" required="required"/></label>
+                        <label>Repeat new password<input type="password" class="adc_input" name="new2" autocomplete="new-password" required="required"/></label>
+                        <button type="submit" class="adc_btn adc_btn_primary">Change password</button>
+                    </form>
+                </section>
+            </div>
         </t>
     </template>
 </odoo>
