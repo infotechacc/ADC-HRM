@@ -3,17 +3,20 @@
 
 <!-- Status shown as a coloured dot and plain text, as in most scheduling products. -->
 <t t-name="binaryaid_hrms_dashboard.Status">
-    <span t-att-class="'ba_status ba_tone_' + tone"><span class="ba_dot" aria-hidden="true"/><t t-esc="label"/></span>
+    <span t-att-class="'ba_pill ba_status ba_tone_' + tone"><span class="ba_dot" aria-hidden="true"/><t t-esc="label"/></span>
 </t>
 
 <t t-name="binaryaid_hrms_dashboard.Metrics">
     <section t-if="d.cards.length" class="ba_metrics" aria-label="Key figures">
         <button t-foreach="d.cards" t-as="card" t-key="card.key" type="button"
-                t-att-class="'ba_metric' + (card.value and ['red', 'amber'].includes(card.color) ? ' is_alert ba_tone_' + card.color : '')"
+                t-att-class="'ba_metric ba_tone_' + card.color + (card.value and ['red', 'amber'].includes(card.color) ? ' is_alert' : '')"
                 t-on-click="() => this.openCard(card)" t-att-title="card.hint">
-            <span class="ba_metric_label" t-esc="card.label"/>
-            <span class="ba_metric_value" t-esc="card.value"/>
-            <span class="ba_metric_hint" t-esc="card.hint"/>
+            <span t-att-class="'ba_metric_icon ba_tone_' + card.color"><i t-att-class="'fa ' + card.icon" aria-hidden="true"/></span>
+            <span class="ba_metric_body">
+                <span class="ba_metric_value" t-esc="card.value"/>
+                <span class="ba_metric_label" t-esc="card.label"/>
+                <span class="ba_metric_hint" t-esc="card.hint"/>
+            </span>
         </button>
     </section>
 </t>
@@ -66,7 +69,7 @@
                                             <tr t-if="!todayRows.length"><td colspan="5" class="text-muted py-3">No shifts match this filter.</td></tr>
                                             <tr t-foreach="todayRows" t-as="row" t-key="row.id" class="ba_click" t-on-click="() => this.openShift(row.id, row.employee)">
                                                 <td class="ba_col_time ba_num" t-esc="row.time_label"/>
-                                                <td class="text-nowrap"><span t-att-class="'ba_avatar' + (row.status === 'unfilled' ? ' is_unfilled' : '')" aria-hidden="true" t-esc="row.initials"/><span t-att-class="row.status === 'unfilled' ? 'text-danger fw-semibold' : 'fw-semibold'" t-esc="row.employee"/></td>
+                                                <td class="text-nowrap"><span t-att-class="'ba_avatar' + (row.status === 'unfilled' ? ' is_unfilled' : '')" t-att-style="row.status === 'unfilled' ? '' : '--av:' + colorFor(row.employee)" aria-hidden="true" t-esc="row.initials"/><span t-att-class="row.status === 'unfilled' ? 'text-danger fw-semibold' : 'fw-semibold'" t-esc="row.employee"/></td>
                                                 <td class="ba_truncate"><t t-if="row.client"><t t-esc="row.client"/><span class="text-muted"> · </span></t><span class="text-muted" t-esc="row.name"/></td>
                                                 <td class="ba_col_place ba_truncate text-muted" t-esc="row.location"/>
                                                 <td class="ba_col_status"><t t-call="binaryaid_hrms_dashboard.Status"><t t-set="tone" t-value="row.tone"/><t t-set="label" t-value="row.status_label"/></t></td>
@@ -91,7 +94,7 @@
                                             <button t-if="!day.past" type="button" class="btn btn-link ba_plan_day" t-on-click="() => this.onDayClick(day)" t-att-aria-label="'Add a shift on ' + day.date" title="Add shift"><i class="fa fa-plus" aria-hidden="true"/></button>
                                         </div>
                                         <button t-foreach="day.items.slice(0, calendarLimit)" t-as="item" t-key="item.id" type="button"
-                                                t-att-class="'ba_cal_item' + (item.unfilled ? ' is_unfilled' : item.state === 'draft' ? ' is_draft' : ' is_published')"
+                                                t-att-class="'ba_cal_item' + (item.unfilled ? ' is_unfilled' : item.state === 'draft' ? ' is_draft' : ' is_published')" t-att-style="item.unfilled ? '' : '--chip:' + colorFor(item.worker)"
                                                 t-on-click="() => this.openShift(item.id, item.title)" t-att-title="item.time + ' ' + (item.unfilled ? 'Unfilled' : item.worker) + (item.client ? ' · ' + item.client : '')">
                                             <span class="ba_cal_line"><span class="ba_num" t-esc="item.time"/> <t t-esc="item.unfilled ? 'Unfilled' : item.worker"/></span>
                                             <span t-if="item.client" class="ba_cal_client" t-esc="item.client"/>
@@ -119,9 +122,10 @@
                                 <div t-if="!openTabs.length" class="ba_empty">Nothing needs your attention.</div>
                                 <div t-foreach="openTabs" t-as="tab" t-key="tab.key" t-att-class="'ba_group' + (state.tab === tab.key ? ' is_open' : '')">
                                     <button type="button" class="ba_group_head" t-att-data-tab="tab.key" t-att-aria-expanded="state.tab === tab.key ? 'true' : 'false'" t-on-click="() => this.selectTab(tab.key)">
-                                        <i t-att-class="'fa fa-fw ' + (state.tab === tab.key ? 'fa-angle-down' : 'fa-angle-right')" aria-hidden="true"/>
+                                        <span t-att-class="'ba_icon_chip ba_tone_' + tabTone(tab.key)"><i t-att-class="'fa ' + tab.icon" aria-hidden="true"/></span>
                                         <span class="ba_group_label" t-esc="tab.label"/>
-                                        <span class="ba_count" t-esc="tab.count"/>
+                                        <span t-att-class="'ba_count_pill ba_tone_' + tabTone(tab.key)" t-esc="tab.count"/>
+                                        <i t-att-class="'fa fa-fw ba_group_caret ' + (state.tab === tab.key ? 'fa-angle-up' : 'fa-angle-down')" aria-hidden="true"/>
                                     </button>
                                     <ul t-if="state.tab === tab.key" class="ba_items">
                                         <li t-foreach="tab.items" t-as="item" t-key="item.source + item.id" class="ba_inbox_item">
@@ -147,7 +151,7 @@
                             <section class="ba_card ba_goto">
                                 <div class="ba_card_header"><h2>Go to</h2></div>
                                 <nav class="ba_links" aria-label="Go to">
-                                    <button t-foreach="d.shortcuts" t-as="link" t-key="link.key" type="button" class="ba_link" t-on-click="() => this.openSection(link.key)"><t t-esc="link.label"/><i class="fa fa-angle-right" aria-hidden="true"/></button>
+                                    <button t-foreach="d.shortcuts" t-as="link" t-key="link.key" type="button" class="ba_link" t-on-click="() => this.openSection(link.key)"><span t-att-class="'ba_icon_chip is_small ba_tone_' + linkTone(link_index)"><i t-att-class="'fa ' + link.icon" aria-hidden="true"/></span><span class="flex-grow-1" t-esc="link.label"/><i class="fa fa-angle-right ba_link_chevron" aria-hidden="true"/></button>
                                 </nav>
                             </section>
                         </aside>
@@ -167,7 +171,7 @@
                     </header>
 
                     <div class="ba_worker_actions_slot"/>
-                    <section t-if="(d.schedule or d.presence) and !(d.clock and d.clock.action)" class="ba_card ba_shift_now">
+                    <section t-if="(d.schedule or d.presence) and !(d.clock and d.clock.action)" class="ba_card ba_shift_now ba_band">
                         <t t-set="focus" t-value="d.schedule and (d.schedule.active or d.schedule.next)"/>
                         <span class="ba_eyebrow"><t t-if="d.schedule and d.schedule.active">On shift now</t><t t-elif="focus">Next shift</t><t t-else="">Your roster</t></span>
                         <t t-if="focus">
@@ -185,7 +189,7 @@
 
                     <nav class="ba_card ba_menu ba_tiles" aria-label="Menu">
                         <button t-foreach="d.worker_nav or d.shortcuts" t-as="link" t-key="link.key" type="button" class="ba_menu_row" t-on-click="() => this.openSection(link.key)">
-                            <i t-att-class="'fa fa-fw ' + link.icon" aria-hidden="true"/><span class="ba_menu_label" t-esc="link.label"/>
+                            <span t-att-class="'ba_icon_chip ba_tone_' + navTone(link.key)"><i t-att-class="'fa ' + link.icon" aria-hidden="true"/></span><span class="ba_menu_label" t-esc="link.label"/>
                             <span t-if="link.badge" class="badge rounded-pill text-bg-primary" t-esc="link.badge"/>
                             <i class="fa fa-angle-right ba_menu_chevron" aria-hidden="true"/>
                         </button>

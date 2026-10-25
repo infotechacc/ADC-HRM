@@ -12,6 +12,14 @@ const TODAY_FILTERS = [
     { key: "done", label: _t("Finished"), statuses: ["completed", "ended"] },
 ];
 const CALENDAR_ITEMS_PER_DAY = 3;
+// Friendly, distinguishable colours: each worker keeps the same colour everywhere.
+const PALETTE = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#14b8a6", "#6366f1", "#f97316", "#0ea5e9", "#84cc16"];
+const TAB_TONES = {
+    unfilled: "red", client_requests: "amber", exceptions: "red", unpublished: "purple", leave: "teal",
+    documents: "pink", missing_signout: "red", timesheets: "blue", missing_notes: "amber", incidents: "red",
+};
+const LINK_TONES = ["blue", "green", "purple", "amber", "pink", "teal", "indigo", "orange", "sky"];
+const NAV_TONES = { work_schedule: "blue", my_incidents: "red", team_messages: "purple", my_leave: "teal", profile: "amber", discuss: "green", my_work: "indigo" };
 
 export class HrmsDashboard extends Component {
     static template = "binaryaid_hrms_dashboard.Dashboard";
@@ -156,6 +164,22 @@ export class HrmsDashboard extends Component {
         return (this.state.data?.schedule?.shifts || []).filter((shift) => !shift.past);
     }
     noop() {}
+    colorFor(name) {
+        let hash = 0;
+        for (const char of name || "") {
+            hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+        }
+        return PALETTE[hash % PALETTE.length];
+    }
+    tabTone(key) {
+        return TAB_TONES[key] || "blue";
+    }
+    linkTone(index) {
+        return LINK_TONES[index % LINK_TONES.length];
+    }
+    navTone(key) {
+        return NAV_TONES[key] || "blue";
+    }
     cancelLeave(leave) {
         return this.itemAction({ source: "my_leave", id: leave.id, title: leave.type }, { name: "cancel", label: _t("Cancel") });
     }

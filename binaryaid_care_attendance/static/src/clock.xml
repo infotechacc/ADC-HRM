@@ -4,29 +4,33 @@
         <xpath expr="//div[hasclass('ba_worker_actions_slot')]" position="inside">
             <section t-if="d.clock" t-att-class="'ba_card ba_clock_card' + (d.clock.action === 'out' ? ' is_in' : '')" aria-live="polite">
                 <t t-if="d.clock.action">
-                    <div class="ba_clock_top">
-                        <span class="ba_eyebrow"><t t-if="d.clock.action === 'out'">On shift · signed in at <t t-esc="d.clock.since"/></t><t t-else="">Your next shift</t></span>
-                        <span t-if="d.clock.pending_exception" class="badge text-bg-warning">Exception in review</span>
+                    <div class="ba_clock_band">
+                        <div class="ba_clock_top">
+                            <span class="ba_eyebrow"><t t-if="d.clock.action === 'out'">On shift · signed in at <t t-esc="d.clock.since"/></t><t t-else="">Your next shift</t></span>
+                            <span t-if="d.clock.pending_exception" class="badge text-bg-warning">Exception in review</span>
+                        </div>
+                        <strong class="ba_clock_title" t-esc="d.clock.title"/>
+                        <span class="ba_clock_line ba_num"><i class="fa fa-clock-o me-2" aria-hidden="true"/><t t-esc="d.clock.time_label"/></span>
+                        <span t-if="d.clock.address or d.clock.location" class="ba_clock_line">
+                            <i class="fa fa-map-marker me-2" aria-hidden="true"/><t t-esc="d.clock.address or d.clock.location"/>
+                            <a t-if="d.clock.map_url" t-att-href="d.clock.map_url" target="_blank" rel="noopener" class="ba_clock_directions">Directions</a>
+                        </span>
                     </div>
-                    <strong class="ba_clock_title" t-esc="d.clock.title"/>
-                    <span class="ba_clock_line ba_num" t-esc="d.clock.time_label"/>
-                    <span t-if="d.clock.address or d.clock.location" class="ba_clock_line text-muted">
-                        <t t-esc="d.clock.address or d.clock.location"/>
-                        <a t-if="d.clock.map_url" t-att-href="d.clock.map_url" target="_blank" rel="noopener" class="ms-2">Directions</a>
-                    </span>
+                    <div class="ba_clock_body">
                     <p t-if="d.clock.plan" class="ba_clock_plan"><span class="ba_eyebrow d-block">Shift plan</span><t t-esc="d.clock.plan"/></p>
                     <span t-if="d.clock.note_draft" class="ba_clock_line text-muted"><i class="fa fa-pencil me-1" aria-hidden="true"/>Your shift note draft is saved.</span>
-                    <button t-if="d.clock.action === 'in'" type="button" class="btn btn-primary btn-lg ba_clock_btn" t-att-disabled="clockState.busy" t-on-click="clockIn">
+                    <button t-if="d.clock.action === 'in'" type="button" class="btn btn-success btn-lg ba_clock_btn" t-att-disabled="clockState.busy" t-on-click="clockIn">
                         <span t-if="clockState.busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"/>Clock In
                     </button>
                     <button t-if="d.clock.action === 'out'" type="button" class="btn btn-danger btn-lg ba_clock_btn" t-on-click="clockOut">Clock Out</button>
                     <button t-if="d.clock.action === 'blocked'" type="button" class="btn btn-secondary btn-lg ba_clock_btn" disabled="disabled">Signed in elsewhere</button>
                     <p t-if="clockState.error" class="alert alert-danger mb-0 mt-2 py-2" role="alert" t-esc="clockState.error"/>
                     <button type="button" class="btn btn-link ba_clock_link" t-on-click="() => this.reportClockException(d.clock.action === 'out' ? 'out' : 'in')">Can't sign <t t-esc="d.clock.action === 'out' ? 'out' : 'in'"/>? Report a problem</button>
+                    </div>
                 </t>
                 <t t-else="">
-                    <span class="ba_eyebrow">Clock</span>
-                    <span class="ba_clock_line text-muted">Clock In opens <t t-esc="d.clock.early"/> minutes before your next published shift.</span>
+                    <div class="ba_clock_body"><span class="ba_eyebrow">Clock</span>
+                    <span class="ba_clock_line text-muted d-block">Clock In opens <t t-esc="d.clock.early"/> minutes before your next published shift.</span></div>
                 </t>
             </section>
         </xpath>
