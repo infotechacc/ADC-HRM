@@ -53,6 +53,7 @@ class TestCareClients(CareCase):
             'client_id': self.client.id, 'name': 'Rep', 'email': 'rep@example.com', 'contact_type': 'representative'})
         contact.with_user(self.admin).action_grant_portal()
         self.assertTrue(contact.user_id.share and contact.user_id.active)
+        self.assertIn('invitation', self.client.message_ids[0].body.lower())
         self.client.with_user(self.admin).write({'active': False})
         self.assertFalse(contact.user_id.with_context(active_test=False).active)
 

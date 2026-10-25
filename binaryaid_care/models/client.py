@@ -133,9 +133,21 @@ class ClientContact(models.Model):
                     'group_ids': [(6, 0, [self.env.ref('base.group_portal').id])]})
                 user.write({'active': True})
                 contact.sudo().user_id = user
-            user.partner_id.signup_prepare()
-            contact.client_id.message_post(body=_('Portal access granted to %s.', contact.name))
+            contact._send_portal_invitation(user)
         return True
+
+    def _send_portal_invitation(self, user):
+        """Email the standard Odoo invitation with a link to set the password."""
+        self.ensure_one()
+        try:
+            with self.env.cr.savepoint():
+                user.sudo().with_context(create_user=1).action_reset_password()
+            note = _('Portal access granted to %(name)s. An invitation email was sent to %(email)s.',
+                     name=self.name, email=self.email)
+        except UserError:
+            note = _('Portal access granted to %s. The invitation email could not be sent: check the outgoing '
+                     'mail server. The contact can use "Reset Password" on the login page with this email address.', self.name)
+        self.client_id.message_post(body=note)
 
     def action_revoke_portal(self):
         for contact in self:
