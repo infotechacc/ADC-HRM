@@ -145,7 +145,7 @@ class TestWorkScheduling(TransactionCase):
         current = self.shift(start=now - timedelta(minutes=30), end=now + timedelta(hours=2))
         current.action_publish()
         schedule = dashboard.get_overview()['schedule']
-        self.assertEqual(len(schedule['days']), 7)
+        self.assertEqual(len(schedule['days']), 14)
         self.assertEqual(sum(day['today'] for day in schedule['days']), 1)
         self.assertTrue(any(day['count'] for day in schedule['days']))
         self.assertTrue(schedule['shifts'][0]['time_label'])
@@ -190,7 +190,7 @@ class TestScheduleBrowser(HttpCase):
                 throw new Error('Published shift missing from dashboard');
             }
             const button = [...document.querySelectorAll('.ba_dashboard button')]
-                .find(el => el.textContent.includes('Open weekly calendar'));
+                .find(el => el.textContent.includes('Open calendar'));
             button.click();
             await waitFor('.o_calendar_view');
             const event = await waitFor('.fc-event');
