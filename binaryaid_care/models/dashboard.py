@@ -180,7 +180,7 @@ class HrmsDashboard(models.AbstractModel):
             item['plan'] = (shift.instructions or '').strip()
             item['address'] = location.address_text() if location else ''
             item['map_url'] = location.map_url or ''
-        data['account_url'] = '/my/care/account'
+        data['account_url'] = '/my'
         if self.env.user.employee_id and not data['admin']:
             unread = (data.get('messages') or {}).get('unread', 0)
             data['worker_nav'] = [

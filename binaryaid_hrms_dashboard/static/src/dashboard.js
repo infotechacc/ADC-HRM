@@ -165,8 +165,8 @@ export class HrmsDashboard extends Component {
     }
     noop() {}
     openAccount() {
-        // The branded account page opens in a new tab so the dashboard stays open.
-        return this.action.doAction({ type: "ir.actions.act_url", url: this.state.data.account_url, target: "new" });
+        // Odoo's My account portal page (ADC-branded), in the same tab.
+        return this.action.doAction({ type: "ir.actions.act_url", url: this.state.data.account_url, target: "self" });
     }
     colorFor(name) {
         let hash = 0;

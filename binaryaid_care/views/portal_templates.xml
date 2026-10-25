@@ -17,42 +17,72 @@
         </div>
     </template>
 
-    <!-- ============================================================ ADC client portal layout -->
-    <template id="client_layout" name="ADC client portal">
+    <!-- ============================================================ ADC branding for all portal pages -->
+    <template id="frontend_layout_adc" inherit_id="portal.frontend_layout" priority="60">
+        <xpath expr="//div[@id='wrapwrap']" position="attributes">
+            <attribute name="t-attf-class" add="adc_client adc_site" separator=" "/>
+        </xpath>
+        <xpath expr="//nav[hasclass('navbar')]" position="attributes">
+            <attribute name="class">navbar navbar-expand adc_top</attribute>
+        </xpath>
+        <xpath expr="//nav[hasclass('navbar')]/div[hasclass('container')]" position="attributes">
+            <attribute name="class">container adc_wrap adc_top_inner</attribute>
+        </xpath>
+        <xpath expr="//a[hasclass('navbar-brand')]" position="replace">
+            <a href="/my" class="adc_brand">
+                <span class="adc_logo">ADC</span>
+                <span class="adc_brand_text"><strong>Australian Diversity Care</strong><small>My account</small></span>
+            </a>
+        </xpath>
+        <xpath expr="//ul[@id='top_menu']" position="before">
+            <t t-set="adc_path" t-value="request.httprequest.path"/>
+            <nav t-if="not request.env.user._is_public()" class="adc_nav" aria-label="Main">
+                <a href="/my" t-att-class="'adc_nav_link' + (' is_active' if adc_path in ('/my', '/my/home') else '')"><i class="fa fa-home" aria-hidden="true"/> My account</a>
+                <t t-if="request.env['binaryaid.care.client.contact'].sudo().search_count([('user_id', '=', request.env.uid), ('is_authorised', '=', True)])">
+                    <a href="/my/support-requests" t-att-class="'adc_nav_link' + (' is_active' if adc_path.startswith('/my/support-requests') and adc_path != '/my/support-requests/new' else '')"><i class="fa fa-list-ul" aria-hidden="true"/> Support requests</a>
+                    <a href="/my/support-requests/new" t-att-class="'adc_nav_link' + (' is_active' if adc_path == '/my/support-requests/new' else '')"><i class="fa fa-plus-circle" aria-hidden="true"/> New request</a>
+                </t>
+                <a href="/my/security" t-att-class="'adc_nav_link' + (' is_active' if adc_path == '/my/security' else '')"><i class="fa fa-lock" aria-hidden="true"/> Security</a>
+                <a t-if="request.env.user._is_internal()" href="/odoo" class="adc_nav_link"><i class="fa fa-th-large" aria-hidden="true"/> Back to HRMS</a>
+            </nav>
+        </xpath>
+    </template>
+
+    <template id="user_dropdown_adc" inherit_id="portal.user_dropdown" priority="60">
+        <xpath expr="//a[@id='o_backend_user_dropdown_link']" position="replace">
+            <a groups="base.group_user" href="/odoo" role="menuitem" class="dropdown-item ps-3" id="o_backend_user_dropdown_link"><i class="fa fa-fw fa-th-large me-1 small"/> Back to HRMS</a>
+        </xpath>
+    </template>
+
+    <!-- No vendor branding on portal pages: footer promotion and browser tab title. -->
+    <template id="brand_promotion_adc" inherit_id="web.brand_promotion" priority="60">
+        <xpath expr="//div[hasclass('o_brand_promotion')]" position="replace"/>
+    </template>
+    <template id="layout_title_adc" inherit_id="web.layout" priority="60">
+        <xpath expr="//title" position="replace">
+            <title t-esc="title or 'Australian Diversity Care'"/>
+        </xpath>
+    </template>
+
+    <!-- No vendor branding inside portal record pages. -->
+    <template id="portal_record_sidebar_adc" inherit_id="portal.portal_record_sidebar" priority="60">
+        <xpath expr="//div[hasclass('o_portal_sidebar_content')]/div[hasclass('d-none')]" position="replace"/>
+    </template>
+
+    <!-- Client summary at the top of My account for participants and representatives. -->
+    <template id="portal_my_home_care_summary" inherit_id="portal.portal_my_home" priority="50">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
+            <t t-if="care_home" t-call="binaryaid_care.client_home_summary"/>
+        </xpath>
+    </template>
+
+    <!-- Support request pages share the branded portal header and footer. -->
+    <template id="client_layout" name="ADC client portal page">
         <t t-call="web.frontend_layout">
-            <t t-set="title">ADC client portal</t>
-            <t t-set="no_header" t-value="True"/>
-            <t t-set="no_footer" t-value="True"/>
-            <div class="adc_client">
-                <header class="adc_top">
-                    <div class="adc_wrap adc_top_inner">
-                        <a href="/my/care" class="adc_brand">
-                            <span class="adc_logo">ADC</span>
-                            <span class="adc_brand_text"><strong>Australian Diversity Care</strong><small>Client portal</small></span>
-                        </a>
-                        <nav class="adc_nav" aria-label="Main">
-                            <a t-if="care_clients" href="/my/care" t-att-class="'adc_nav_link' + (' is_active' if page == 'home' else '')"><i class="fa fa-home" aria-hidden="true"/> Home</a>
-                            <a t-if="care_clients" href="/my/support-requests" t-att-class="'adc_nav_link' + (' is_active' if page == 'requests' else '')"><i class="fa fa-list-ul" aria-hidden="true"/> My requests</a>
-                            <a t-if="care_clients" href="/my/support-requests/new" t-att-class="'adc_nav_link' + (' is_active' if page == 'new' else '')"><i class="fa fa-plus-circle" aria-hidden="true"/> New request</a>
-                            <a href="/my/care/account" t-att-class="'adc_nav_link' + (' is_active' if page == 'account' else '')"><i class="fa fa-user-circle-o" aria-hidden="true"/> My account</a>
-                        </nav>
-                        <div class="adc_user">
-                            <span class="adc_avatar" t-esc="(first_name or 'U')[:1].upper()"/>
-                            <span class="adc_user_name" t-esc="user.name.replace('[DEMO] ', '')"/>
-                            <a href="/web/session/logout?redirect=/web/login" class="adc_logout" title="Log out"><i class="fa fa-sign-out" aria-hidden="true"/><span class="adc_logout_text"> Log out</span></a>
-                        </div>
-                    </div>
-                </header>
-                <main class="adc_wrap adc_main">
-                    <t t-out="0"/>
-                </main>
-                <footer class="adc_footer">
-                    <div class="adc_wrap adc_footer_inner">
-                        <span>© <t t-esc="company.name"/></span>
-                        <span><t t-if="company.phone"><i class="fa fa-phone" aria-hidden="true"/> <t t-esc="company.phone"/></t>
-                            <t t-if="company.email"> · <i class="fa fa-envelope-o" aria-hidden="true"/> <t t-esc="company.email"/></t></span>
-                    </div>
-                </footer>
+            <t t-set="title">Support requests · ADC</t>
+            <t t-set="is_portal" t-value="True"/>
+            <div class="adc_wrap adc_main">
+                <t t-out="0"/>
             </div>
         </t>
     </template>
@@ -88,60 +118,39 @@
         </div>
     </template>
 
-    <!-- ============================================================ home -->
-    <template id="client_home" name="ADC client home">
-        <t t-call="binaryaid_care.client_layout">
+    <!-- ============================================================ client summary on /my -->
+    <template id="client_home_summary" name="ADC client summary">
+        <t t-set="h" t-value="care_home"/>
+        <div class="adc_summary">
             <section class="adc_hero">
                 <div>
                     <span class="adc_eyebrow">Welcome back</span>
-                    <h1>Hello, <t t-esc="first_name"/></h1>
-                    <p>Request support for <t t-esc="', '.join(care_clients.mapped('name'))"/> and follow every request in one place.</p>
+                    <h1>Hello, <t t-esc="h['first_name']"/></h1>
+                    <p>Request support for <t t-esc="', '.join(h['clients'].mapped('name'))"/> and follow every request in one place.</p>
                 </div>
                 <a href="/my/support-requests/new" class="adc_btn adc_btn_light adc_btn_lg"><i class="fa fa-plus" aria-hidden="true"/> Request support</a>
             </section>
-
             <section class="adc_stats">
-                <a href="/my/support-requests?status=open" class="adc_stat adc_tone_amber"><span class="adc_stat_icon"><i class="fa fa-hourglass-half" aria-hidden="true"/></span><span><strong t-esc="stats['open']"/><small>Open requests</small></span></a>
-                <a href="/my/support-requests?status=scheduled" class="adc_stat adc_tone_green"><span class="adc_stat_icon"><i class="fa fa-check-circle" aria-hidden="true"/></span><span><strong t-esc="stats['scheduled']"/><small>Scheduled</small></span></a>
-                <a href="#visits" class="adc_stat adc_tone_blue"><span class="adc_stat_icon"><i class="fa fa-calendar" aria-hidden="true"/></span><span><strong t-esc="stats['visits']"/><small>Upcoming visits</small></span></a>
+                <a href="/my/support-requests?status=open" class="adc_stat adc_tone_amber"><span class="adc_stat_icon"><i class="fa fa-hourglass-half" aria-hidden="true"/></span><span><strong t-esc="h['stats']['open']"/><small>Open requests</small></span></a>
+                <a href="/my/support-requests?status=scheduled" class="adc_stat adc_tone_green"><span class="adc_stat_icon"><i class="fa fa-check-circle" aria-hidden="true"/></span><span><strong t-esc="h['stats']['scheduled']"/><small>Scheduled</small></span></a>
+                <a href="#adc_visits" class="adc_stat adc_tone_blue"><span class="adc_stat_icon"><i class="fa fa-calendar" aria-hidden="true"/></span><span><strong t-esc="h['stats']['visits']"/><small>Upcoming visits</small></span></a>
             </section>
-
             <div class="adc_grid">
-                <section class="adc_card" id="visits">
+                <section class="adc_card" id="adc_visits">
                     <div class="adc_card_head"><h2>Upcoming visits</h2></div>
-                    <div t-if="not visits" class="adc_empty"><i class="fa fa-calendar-o" aria-hidden="true"/><p>No visits are booked yet. Confirmed support appears here.</p></div>
-                    <t t-foreach="visits" t-as="visit"><t t-call="binaryaid_care.client_visit_row"/></t>
+                    <div t-if="not h['visits']" class="adc_empty"><i class="fa fa-calendar-o" aria-hidden="true"/><p>No visits are booked yet. Confirmed support appears here.</p></div>
+                    <t t-foreach="h['visits']" t-as="visit"><t t-call="binaryaid_care.client_visit_row"/></t>
                 </section>
                 <section class="adc_card">
                     <div class="adc_card_head"><h2>Recent requests</h2><a href="/my/support-requests" class="adc_link">View all <i class="fa fa-arrow-right" aria-hidden="true"/></a></div>
-                    <div t-if="not care_requests" class="adc_empty"><i class="fa fa-inbox" aria-hidden="true"/><p>You have not requested support yet.</p>
+                    <div t-if="not h['requests']" class="adc_empty"><i class="fa fa-inbox" aria-hidden="true"/><p>You have not requested support yet.</p>
                         <a href="/my/support-requests/new" class="adc_btn adc_btn_primary">Request support</a></div>
-                    <t t-foreach="care_requests" t-as="record"><t t-call="binaryaid_care.client_request_row"/></t>
+                    <t t-set="tones" t-value="h['tones']"/><t t-set="state_labels" t-value="h['state_labels']"/>
+                    <t t-foreach="h['requests']" t-as="record"><t t-call="binaryaid_care.client_request_row"/></t>
                 </section>
             </div>
-
-            <section class="adc_people">
-                <h2>People you support</h2>
-                <div class="adc_people_grid">
-                    <div t-foreach="people" t-as="person" class="adc_person">
-                        <span class="adc_person_avatar" t-esc="person['name'].replace('[DEMO] ', '')[:1]"/>
-                        <div>
-                            <strong t-esc="person['name']"/>
-                            <span t-if="person['address']" class="adc_muted d-block"><i class="fa fa-map-marker" aria-hidden="true"/> <t t-esc="person['address']"/></span>
-                            <span class="adc_muted d-block"><i class="fa fa-calendar-check-o" aria-hidden="true"/>
-                                <t t-if="person['next']">Next visit <t t-esc="person['next']['date']"/>, <t t-esc="person['next']['time']"/></t>
-                                <t t-else="">No visit booked</t></span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="adc_help">
-                <i class="fa fa-life-ring" aria-hidden="true"/>
-                <div><strong>Need help or have an urgent change?</strong>
-                    <p>Contact the ADC office<t t-if="company.phone"> on <t t-esc="company.phone"/></t><t t-if="company.email"> or <t t-esc="company.email"/></t>. For emergencies call 000.</p></div>
-            </section>
-        </t>
+            <h2 class="adc_section_title">Your account</h2>
+        </div>
     </template>
 
     <!-- ============================================================ list -->
@@ -266,42 +275,4 @@
         </t>
     </template>
 
-    <!-- ============================================================ account -->
-    <template id="client_account" name="ADC my account">
-        <t t-call="binaryaid_care.client_layout">
-            <div class="adc_page_head"><div><h1>My account</h1><p class="adc_muted">Your details and password.</p></div></div>
-            <div t-if="success" class="adc_alert adc_tone_green"><i class="fa fa-check-circle" aria-hidden="true"/> <t t-esc="success"/></div>
-            <div class="adc_grid">
-                <section class="adc_card adc_profile">
-                    <div class="adc_profile_head">
-                        <span class="adc_avatar is_large" t-esc="(first_name or 'U')[:1].upper()"/>
-                        <div><h2 t-esc="user.name"/><span class="adc_muted" t-esc="user.email or user.login"/></div>
-                    </div>
-                    <form method="post" action="/my/care/account" class="adc_form">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <input type="hidden" name="form" value="details"/>
-                        <label>Phone<input type="tel" class="adc_input" name="phone" t-att-value="partner.phone"/></label>
-                        <button type="submit" class="adc_btn adc_btn_primary">Save details</button>
-                    </form>
-                    <div class="adc_account_links">
-                        <a t-if="care_clients" href="/my/support-requests" class="adc_btn adc_btn_ghost"><i class="fa fa-list-ul" aria-hidden="true"/> My requests</a>
-                        <a href="/web/session/logout?redirect=/web/login" class="adc_btn adc_btn_ghost"><i class="fa fa-sign-out" aria-hidden="true"/> Log out</a>
-                    </div>
-                </section>
-                <section class="adc_card">
-                    <div class="adc_card_head"><h2>Change password</h2></div>
-                    <form method="post" action="/my/care/account" class="adc_form">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <input type="hidden" name="form" value="password"/>
-                        <div t-if="errors" class="adc_alert adc_tone_red"><i class="fa fa-exclamation-circle" aria-hidden="true"/>
-                            <t t-esc="errors"/></div>
-                        <label>Current password<input type="password" class="adc_input" name="old" autocomplete="current-password" required="required"/></label>
-                        <label>New password<input type="password" class="adc_input" name="new1" autocomplete="new-password" required="required"/></label>
-                        <label>Repeat new password<input type="password" class="adc_input" name="new2" autocomplete="new-password" required="required"/></label>
-                        <button type="submit" class="adc_btn adc_btn_primary">Change password</button>
-                    </form>
-                </section>
-            </div>
-        </t>
-    </template>
 </odoo>

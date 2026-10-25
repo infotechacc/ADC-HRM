@@ -30,10 +30,27 @@ class CareClientPortal(CustomerPortal):
 
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
+        contacts = self._care_contacts()
         if 'care_request_count' in counters:
-            values['care_request_count'] = request.env['binaryaid.care.client.request'].search_count([]) \
-                if self._care_contacts() else 0
+            values['care_request_count'] = request.env['binaryaid.care.client.request'].search_count([]) if contacts else 0
+        if not counters and contacts:
+            # First render of /my: the client summary shown above Odoo's own account tiles.
+            values['care_home'] = self._care_summary(contacts)
         return values
+
+    def _care_summary(self, contacts):
+        clients = contacts.client_id
+        Request = request.env['binaryaid.care.client.request']
+        values = self._care_values('home')
+        return {
+            'first_name': values['first_name'], 'clients': clients, 'tones': STATE_TONES,
+            'state_labels': values['state_labels'],
+            'requests': Request.search([], order='create_date desc', limit=5),
+            'visits': self._visits(clients),
+            'stats': {'open': Request.search_count([('state', 'in', list(OPEN_STATES))]),
+                      'scheduled': Request.search_count([('state', '=', 'scheduled')]),
+                      'visits': len(self._visits(clients, limit=100))},
+        }
 
     def _care_values(self, page, **extra):
         user = request.env.user
@@ -42,7 +59,6 @@ class CareClientPortal(CustomerPortal):
             'first_name': (user.name or '').replace('[DEMO]', '').split()[0] if user.name else '',
             'care_clients': self._care_contacts().client_id, 'tones': STATE_TONES, 'timeline': TIMELINE,
             'state_labels': dict(request.env['binaryaid.care.client.request']._fields['state']._description_selection(request.env)),
-            'no_header': True, 'no_footer': True,
         }
         values.update(extra)
         return values
@@ -63,32 +79,10 @@ class CareClientPortal(CustomerPortal):
         return visits
 
     # ------------------------------------------------------------------ pages
-    @http.route()
-    def home(self, **kw):
-        if self._care_contacts():
-            return request.redirect('/my/care')
-        return super().home(**kw)
-
-    @http.route(['/my/care'], type='http', auth='user', website=True)
+    @http.route(['/my/care', '/my/care/account'], type='http', auth='user', website=True)
     def care_home(self, **kw):
-        contacts = self._care_contacts()
-        if not contacts:
-            return request.redirect('/my/care/account')
-        clients = contacts.client_id
-        Request = request.env['binaryaid.care.client.request']
-        requests_ = Request.search([], order='create_date desc', limit=5)
-        visits = self._visits(clients)
-        stats = {'open': Request.search_count([('state', 'in', list(OPEN_STATES))]),
-                 'scheduled': Request.search_count([('state', '=', 'scheduled')]),
-                 'visits': len(self._visits(clients, limit=100))}
-        people = []
-        for client in clients:
-            location = client.sudo().location_ids.filtered('active')[:1]
-            nxt = self._visits(client, limit=1)
-            people.append({'name': client.name, 'address': location.address_text() if location else '',
-                           'next': nxt[0] if nxt else None})
-        return request.render('binaryaid_care.client_home', self._care_values(
-            'home', care_requests=requests_, visits=visits, stats=stats, people=people))
+        """Earlier client portal addresses: everything now lives on Odoo's My account page."""
+        return request.redirect('/my')
 
     @http.route(['/my/support-requests'], type='http', auth='user', website=True)
     def care_requests(self, status='all', **kw):
@@ -123,7 +117,7 @@ class CareClientPortal(CustomerPortal):
     def care_request_new(self, **post):
         contacts = self._care_contacts()
         if not contacts:
-            return request.redirect('/my/care/account')
+            return request.redirect('/my')
         clients = contacts.client_id
         values = self._care_values('new', error='', post=post, locations=clients.sudo().location_ids.filtered('active'),
                                    today=fields.Date.to_string(fields.Date.context_today(contacts[:1])))
@@ -135,25 +129,6 @@ class CareClientPortal(CustomerPortal):
                 return request.render('binaryaid_care.client_request_new', values)
             return request.redirect('/my/support-requests/%s?created=1' % record.id)
         return request.render('binaryaid_care.client_request_new', values)
-
-    @http.route(['/my/care/account'], type='http', auth='user', website=True, methods=['GET', 'POST'])
-    def care_account(self, **post):
-        """Branded account page: details, phone and password."""
-        values = self._care_values('account', errors='', success='', post=post)
-        partner = request.env.user.partner_id
-        if request.httprequest.method == 'POST':
-            if post.get('form') == 'details':
-                partner.sudo().write({'phone': (post.get('phone') or '').strip()[:32]})
-                values['success'] = _('Your phone number was saved.')
-            elif post.get('form') == 'password':
-                result = self._update_password(post.get('old', '').strip(), post.get('new1', '').strip(), post.get('new2', '').strip())
-                if result.get('errors'):
-                    error = result['errors'].get('password')
-                    values['errors'] = ' '.join(error.values()) if isinstance(error, dict) else str(error)
-                else:
-                    values['success'] = _('Your password was changed.')
-        values['partner'] = partner
-        return request.render('binaryaid_care.client_account', values)
 
     # ------------------------------------------------------------------ actions
     def _parse_time(self, value):
