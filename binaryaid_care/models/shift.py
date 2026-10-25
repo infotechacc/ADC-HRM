@@ -5,6 +5,11 @@ from odoo.exceptions import UserError, ValidationError
 class WorkShift(models.Model):
     _inherit = 'binaryaid.work.shift'
 
+    # A draft may be created before a worker is chosen: it is an unfilled shift.
+    # A worker is required to publish (see _check_publication_eligibility).
+    employee_id = fields.Many2one(required=False)
+    is_unfilled = fields.Boolean(compute='_compute_is_unfilled', search='_search_is_unfilled', string='Unfilled')
+
     client_id = fields.Many2one('binaryaid.care.client', string='Client', ondelete='restrict', tracking=True,
                                 index=True, check_company=True)
     service_location_id = fields.Many2one('binaryaid.care.service.location', string='Service location',
@@ -24,6 +29,30 @@ class WorkShift(models.Model):
                                             groups='binaryaid_work_management.group_work_admin')
     binaryaid_revision = fields.Integer(readonly=True, copy=False, default=0)
     binaryaid_revision_token = fields.Char(compute='_compute_revision_token', inverse='_inverse_revision_token')
+
+    @api.depends('employee_id')
+    def _compute_is_unfilled(self):
+        for shift in self:
+            shift.is_unfilled = not shift.employee_id
+
+    def _search_is_unfilled(self, operator, value):
+        if operator not in ('=', '!='):
+            raise UserError(_('Unsupported search on unfilled shifts.'))
+        unfilled = (operator == '=') == bool(value)
+        return [('employee_id', '=' if unfilled else '!=', False)]
+
+    @api.constrains('start', 'end', 'unpaid_break_minutes', 'employee_id', 'task_ids',
+                    'company_id', 'notice_hours', 'min_rest_hours', 'weekly_hours_limit')
+    def _check_details(self):
+        unfilled = self.filtered(lambda s: not s.employee_id)
+        for shift in unfilled:
+            if shift.state != 'draft':
+                raise ValidationError(_('Assign a worker before publishing a shift.'))
+            if shift.end <= shift.start or shift.unpaid_break_minutes < 0 or shift.planned_hours <= 0:
+                raise ValidationError(_('End must follow start and unpaid breaks must leave positive paid hours.'))
+            if shift.task_ids:
+                raise ValidationError(_('Assign a worker before adding shift tasks.'))
+        return super(WorkShift, self - unfilled)._check_details()
 
     @api.depends('service_location_id', 'service_location_id.name')
     def _compute_location(self):
@@ -61,6 +90,8 @@ class WorkShift(models.Model):
     def _onchange_client_id(self):
         if self.service_location_id.client_id != self.client_id:
             self.service_location_id = self.client_id.location_ids[:1]
+        if self.client_id and not self.name:
+            self.name = _('%s support', self.client_id.name)
 
     @api.constrains('client_id', 'service_location_id', 'client_request_id')
     def _check_client_links(self):
@@ -100,6 +131,8 @@ class WorkShift(models.Model):
     def _missing_worker_documents(self):
         """Required worker document categories that are missing, unapproved or expired at shift start."""
         self.ensure_one()
+        if not self.employee_id:
+            return []
         categories = self.env['binaryaid.care.document.category'].sudo().search(
             [('applies_to', '=', 'employee'), ('required', '=', True)])
         documents = self.env['binaryaid.care.document'].sudo().search(
@@ -127,6 +160,8 @@ class WorkShift(models.Model):
         return warnings
 
     def _check_publication_eligibility(self):
+        if self.filtered(lambda s: not s.employee_id):
+            raise ValidationError(_('Assign a worker before publishing this shift.'))
         super()._check_publication_eligibility()
         for shift in self:
             if shift.client_id and (not shift.client_id.active or shift.client_id.status != 'active'):

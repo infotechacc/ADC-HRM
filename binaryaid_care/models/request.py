@@ -150,7 +150,7 @@ class ClientRequest(models.Model):
         }
         return {'type': 'ir.actions.act_window', 'name': _('New shift for %s', self.client_id.name),
                 'res_model': 'binaryaid.work.shift', 'view_mode': 'form', 'target': 'new',
-                'views': [(self.env.ref('binaryaid_work_scheduling.view_shift_form').id, 'form')], 'context': context}
+                'views': [(self.env.ref('binaryaid_care.view_shift_quick_form').id, 'form')], 'context': context}
 
     def action_open_shifts(self):
         self.ensure_one()

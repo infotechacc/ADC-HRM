@@ -29,6 +29,10 @@ class HrmsDashboard(models.AbstractModel):
         today = fields.Date.context_today(self)
         return today - timedelta(days=today.weekday())
 
+    def _shift_form_view(self, shift=None):
+        """Form used for shift dialogs opened from the dashboard (extensions may use a quick form)."""
+        return self.env.ref('binaryaid_work_scheduling.view_shift_form').id
+
     def _is_shift_admin(self):
         return self.env.user.has_group('binaryaid_work_management.group_work_admin')
 
@@ -148,8 +152,24 @@ class HrmsDashboard(models.AbstractModel):
         shifts = self.env['binaryaid.work.shift'].search([
             ('company_id', '=', self.env.company.id), ('state', 'in', ['draft', 'published']),
             ('start', '<', end), ('end', '>', start)])
-        return {'days': self._roster_days(shifts, first_date), 'period': self._period_label(first_date),
-                'timezone': self._viewer_tz()}
+        days = self._roster_days(shifts, first_date)
+        tz = pytz.timezone(self._viewer_tz())
+        by_date = {day['date']: day for day in days}
+        for day in days:
+            day['items'] = []
+        # Calendar entries sit on their local start day; overnight shifts show their end time.
+        for shift in shifts.sorted('start'):
+            day = by_date.get(str(pytz.UTC.localize(shift.start).astimezone(tz).date()))
+            if day is not None:
+                day['items'].append(self._shift_chip(shift))
+        return {'days': days, 'period': self._period_label(first_date), 'timezone': self._viewer_tz()}
+
+    def _shift_chip(self, shift):
+        name = shift.employee_name or ''
+        parts = name.split()
+        short = ('%s %s.' % (parts[0], parts[-1][0])) if len(parts) > 1 else name
+        return {'id': shift.id, 'time': format_datetime(self.env, shift.start, tz=self._viewer_tz(), dt_format='HH:mm'),
+                'worker': short, 'title': shift.name, 'state': shift.state, 'unfilled': not shift.employee_id}
 
     def _unpublished_tab(self, domain):
         shifts = self.env['binaryaid.work.shift'].search(domain, order='start, id', limit=ATTENTION_LIMIT)
@@ -219,7 +239,7 @@ class HrmsDashboard(models.AbstractModel):
             context.update(default_start=fields.Datetime.to_string(start + timedelta(hours=9)),
                            default_end=fields.Datetime.to_string(start + timedelta(hours=17)))
         return {'type': 'ir.actions.act_window', 'name': _('New shift'), 'res_model': 'binaryaid.work.shift',
-                'views': [(self.env.ref('binaryaid_work_scheduling.view_shift_form').id, 'form')],
+                'views': [(self._shift_form_view(), 'form')],
                 'target': 'new', 'context': context}
 
     def _attention_record(self, source, res_id):
@@ -240,7 +260,7 @@ class HrmsDashboard(models.AbstractModel):
         self._check_user()
         shift = self._attention_record(source, res_id)
         if name == 'open':
-            return self._dialog(shift, view=self.env.ref('binaryaid_work_scheduling.view_shift_form').id)
+            return self._dialog(shift, view=self._shift_form_view(shift))
         if name == 'publish':
             shift.action_publish()
             return True

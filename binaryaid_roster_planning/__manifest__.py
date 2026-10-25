@@ -1,6 +1,6 @@
 {
     'name': 'BinaryAid Roster Planning',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Human Resources',
     'summary': 'Versioned roster patterns, bulk assignments, automation and exceptions',
     'description': 'Reusable effective-dated employee rosters with controlled generation, shift coverage and attendance reconciliation.',

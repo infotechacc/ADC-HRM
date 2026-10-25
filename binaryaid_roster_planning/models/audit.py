@@ -9,8 +9,8 @@ class RosterEvent(models.Model):
 
     shift_id = fields.Many2one('binaryaid.work.shift', required=True, ondelete='restrict', index=True)
     company_id = fields.Many2one('res.company', required=True, index=True)
-    employee_id = fields.Many2one('hr.employee', required=True, ondelete='restrict')
-    user_id = fields.Many2one('res.users', required=True, ondelete='restrict', index=True)
+    employee_id = fields.Many2one('hr.employee', ondelete='restrict')
+    user_id = fields.Many2one('res.users', ondelete='restrict', index=True)
     author_id = fields.Many2one('res.users', required=True, ondelete='restrict')
     event = fields.Char(required=True)
     reason = fields.Text()
