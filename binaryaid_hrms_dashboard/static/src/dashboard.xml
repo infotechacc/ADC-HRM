@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+<t t-name="binaryaid_hrms_dashboard.Metrics">
+    <section t-if="d.cards.length" class="ba_metrics" aria-label="Key figures">
+                    <button t-foreach="d.cards" t-as="card" t-key="card.key" t-att-class="'ba_metric ba_' + card.color + (card.value and ['red', 'amber'].includes(card.color) ? ' is_alert' : '')" t-on-click="() => this.openCard(card)" t-att-aria-label="card.value + ' ' + card.label + '. ' + card.hint">
+                        <span class="ba_metric_icon"><i t-att-class="'fa ' + card.icon" aria-hidden="true"/></span>
+                        <span class="ba_metric_body"><strong t-esc="card.value"/><span class="ba_metric_label" t-esc="card.label"/><small t-esc="card.hint"/></span>
+                    </button>
+                </section>
+</t>
 <t t-name="binaryaid_hrms_dashboard.Dashboard">
     <div class="ba_dashboard h-100 overflow-auto" t-att-aria-busy="state.loading ? 'true' : 'false'">
         <div class="ba_dashboard_inner">
@@ -7,50 +15,173 @@
             <div t-if="!state.data and state.loading" class="ba_loading" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"/>Preparing your workspace…</div>
             <t t-if="state.data">
                 <t t-set="d" t-value="state.data"/>
-                <div class="ba_topline"><div class="ba_brand"><span class="ba_brand_mark"><i class="fa fa-th-large" aria-hidden="true"/></span>Workspace<span class="ba_topline_divider">/</span><span class="ba_company" t-esc="d.company_name"/></div><span class="ba_context"><i class="fa fa-building-o" aria-hidden="true"/>Active company</span></div>
-                <header class="ba_hero">
-                    <div class="ba_hero_content">
-                        <div class="ba_eyebrow">YOUR HR WORKSPACE</div>
-                        <h1>Welcome back, <t t-esc="d.user_name.split(' ')[0]"/>.</h1>
-                        <p t-if="d.manager">A clear view of your people, priorities, and the work ahead.</p>
-                        <p t-else="">Your schedule, your work, and everything you need to stay on track.</p>
-                        <span class="ba_hero_scope"><i t-att-class="'fa ' + (d.manager ? 'fa-users' : 'fa-user-o')" aria-hidden="true"/><t t-esc="d.manager ? 'Team overview' : 'My overview'"/></span>
+                <header class="ba_header">
+                    <div class="ba_header_text">
+                        <span class="ba_eyebrow"><t t-esc="d.today_label"/><span class="ba_dot" aria-hidden="true">·</span><t t-esc="d.company_name"/></span>
+                        <h1><t t-esc="d.greeting"/>, <t t-esc="d.user_name.split(' ')[0]"/></h1>
+                        <p t-if="d.admin">
+                            <t t-if="attentionTotal"><strong t-esc="attentionTotal"/> item<t t-if="attentionTotal !== 1">s</t> need your attention today.</t>
+                            <t t-else="">You’re all caught up. Nothing is waiting for a decision.</t>
+                        </p>
+                        <p t-else="">Your roster, time off and messages in one place.</p>
                     </div>
-                    <div class="ba_header_meta">
-                        <span class="ba_date_label">TODAY</span><span class="ba_today" t-esc="d.today_label"/>
-                        <button class="btn ba_refresh" t-on-click="load" t-att-disabled="state.loading"><i t-att-class="'fa fa-refresh me-2' + (state.loading ? ' fa-spin' : '')" aria-hidden="true"/><t t-if="state.loading">Refreshing…</t><t t-else="">Refresh overview</t></button>
+                    <div class="ba_header_actions">
+                        <button t-foreach="d.quick_actions" t-as="qa" t-key="qa.key" t-att-class="'btn ' + (qa.primary ? 'ba_primary_btn' : 'ba_secondary_btn')" t-on-click="() => this.quick(qa.key)"><i t-att-class="'fa me-2 ' + qa.icon" aria-hidden="true"/><t t-esc="qa.label"/></button>
+                        <button class="btn ba_icon_btn ba_refresh" t-on-click="load" t-att-disabled="state.loading" title="Refresh" aria-label="Refresh dashboard"><i t-att-class="'fa fa-refresh' + (state.loading ? ' fa-spin' : '')" aria-hidden="true"/></button>
                     </div>
                 </header>
-                <div class="ba_section_intro"><div><span class="ba_section_kicker">AT A GLANCE</span><h2>Your overview</h2></div><span class="ba_section_hint">Current company · Your permitted records</span></div>
-                <div t-if="d.cards.length" class="ba_metrics">
-                    <button t-foreach="d.cards" t-as="card" t-key="card.key" t-att-class="'ba_metric ba_' + card.color" t-on-click="() => this.openSection(card.key)">
-                        <div class="ba_metric_top"><span class="ba_metric_icon"><i t-att-class="'fa ' + card.icon" aria-hidden="true"/></span><i class="fa fa-arrow-up ba_metric_arrow" aria-hidden="true"/></div>
-                        <strong t-esc="card.value"/><span class="ba_metric_label" t-esc="card.label"/><small t-esc="card.hint"/>
-                    </button>
-                </div>
-                <div class="ba_workspace">
-                    <main class="ba_main_column" aria-label="Work and schedule">
-                        <div class="ba_schedule_slot"/>
-                        <section t-if="d.can_work" class="ba_panel ba_recent_work">
-                            <div class="ba_panel_heading"><div><span class="ba_section_kicker">WORKSPACE</span><h2>Recent work</h2><p>Your latest work items, ordered by Work Date</p></div><button t-if="d.manager or d.has_employee" class="btn ba_text_action" t-on-click="() => this.openSection(d.manager ? 'employee_work' : 'my_work')">View all work<i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button></div>
-                            <div t-if="!d.recent_work.length" class="ba_empty"><span class="ba_empty_icon"><i class="fa fa-check-square-o" aria-hidden="true"/></span><h3>A fresh start for your work</h3><p>Your assigned and self-added work will appear here.</p><button t-if="d.manager or d.has_employee" class="btn ba_secondary_btn" t-on-click="() => this.openSection(d.manager ? 'employee_work' : 'my_work')">Open work history<i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button></div>
-                            <div t-else="" class="table-responsive"><table class="table ba_work_table"><thead><tr><th scope="col">Work item</th><th t-if="d.manager" scope="col">Employee</th><th scope="col">Work Date</th><th scope="col">Status</th><th scope="col"><span class="visually-hidden">Open work</span></th></tr></thead><tbody><tr t-foreach="d.recent_work" t-as="work" t-key="work.id"><td><div class="ba_work_identity"><span t-att-class="'ba_work_icon ' + (work.done ? 'is_done' : '')"><i t-att-class="'fa ' + (work.done ? 'fa-check' : 'fa-file-text-o')" aria-hidden="true"/></span><button class="btn btn-link p-0 text-start" t-on-click="() => this.openWork(work.id)" t-esc="work.name"/></div></td><td t-if="d.manager" class="ba_employee_cell" t-esc="work.employee"/><td class="text-nowrap ba_work_date" t-esc="work.date"/><td><span t-att-class="'ba_status ' + (work.done ? 'ba_done' : '')"><span class="ba_status_dot"/><t t-esc="work.status"/></span></td><td><button class="btn ba_row_action" t-on-click="() => this.openWork(work.id)" t-att-aria-label="'Open ' + work.name"><i class="fa fa-angle-right" aria-hidden="true"/></button></td></tr></tbody></table></div>
+
+                <!-- Worker home: current shift status and large touch targets -->
+                <section t-if="!d.admin and (d.schedule or d.presence)" t-att-class="'ba_status_banner' + (d.schedule and d.schedule.active ? ' is_active' : '')" aria-live="polite">
+                    <span class="ba_status_icon"><i t-att-class="'fa ' + (d.schedule and d.schedule.active ? 'fa-play-circle' : 'fa-calendar-o')" aria-hidden="true"/></span>
+                    <div class="ba_status_text">
+                        <t t-if="d.schedule and d.schedule.active">
+                            <span class="ba_status_kicker">ON SHIFT NOW</span>
+                            <strong t-esc="d.schedule.active.name"/>
+                            <span><t t-esc="d.schedule.active.time_label"/><t t-if="d.schedule.active.location"> · <t t-esc="d.schedule.active.location"/></t></span>
+                        </t>
+                        <t t-elif="d.schedule and d.schedule.next">
+                            <span class="ba_status_kicker">NEXT SHIFT</span>
+                            <strong t-esc="d.schedule.next.name"/>
+                            <span><t t-esc="d.schedule.next.day"/> <t t-esc="d.schedule.next.day_number"/> · <t t-esc="d.schedule.next.time_label"/><t t-if="d.schedule.next.location"> · <t t-esc="d.schedule.next.location"/></t></span>
+                        </t>
+                        <t t-else="">
+                            <span class="ba_status_kicker">YOUR ROSTER</span>
+                            <strong>No upcoming published shifts</strong>
+                            <span>New shifts appear here as soon as they are published.</span>
+                        </t>
+                    </div>
+                    <span t-if="d.presence" t-att-class="'ba_presence' + (d.presence.checked_in ? ' is_in' : '')"><span class="ba_presence_dot" aria-hidden="true"/><t t-if="d.presence.checked_in">Signed in since <t t-esc="d.presence.since"/></t><t t-else="">Not signed in</t></span>
+                </section>
+                <nav t-if="!d.admin" class="ba_tiles" aria-label="Quick links">
+                    <button t-foreach="d.shortcuts" t-as="link" t-key="link.key" class="ba_tile" t-on-click="() => this.openSection(link.key)"><span class="ba_tile_icon"><i t-att-class="'fa ' + link.icon" aria-hidden="true"/></span><span t-esc="link.label"/></button>
+                </nav>
+
+                <t t-if="d.admin" t-call="binaryaid_hrms_dashboard.Metrics"/>
+
+                <div t-att-class="'ba_workspace' + (d.admin ? '' : ' is_worker')">
+                    <main class="ba_main_column" aria-label="Daily operations">
+                        <!-- Administrator: everything rostered today with live attendance status -->
+                        <section t-if="d.today" class="ba_panel ba_today_panel" t-ref="today">
+                            <div class="ba_panel_heading">
+                                <div><h2>Today’s shifts</h2><p><t t-esc="d.today.rows.length"/> shift<t t-if="d.today.rows.length !== 1">s</t> rostered · times in <t t-esc="d.coverage ? d.coverage.timezone : ''"/></p></div>
+                                <button class="btn ba_text_action" t-on-click="() => this.openSection('work_schedule')">Open calendar<i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button>
+                            </div>
+                            <div t-if="d.today.rows.length" class="ba_chips" role="group" aria-label="Filter today’s shifts">
+                                <button t-foreach="todayFilters" t-as="filter" t-key="filter.key" t-att-class="'ba_chip' + (state.todayFilter === filter.key ? ' is_active' : '')" t-att-aria-pressed="state.todayFilter === filter.key ? 'true' : 'false'" t-on-click="() => state.todayFilter = filter.key"><t t-esc="filter.label"/><span class="ba_chip_count" t-esc="filterCount(filter)"/></button>
+                            </div>
+                            <div t-if="!d.today.rows.length" class="ba_empty_inline">
+                                <span class="ba_empty_icon"><i class="fa fa-calendar-plus-o" aria-hidden="true"/></span>
+                                <div><h3>No shifts rostered today</h3><p>Create a shift or pick a day in the planner below.</p></div>
+                                <button class="btn ba_secondary_btn" t-on-click="() => this.quick('create_shift')"><i class="fa fa-plus me-2" aria-hidden="true"/>Create shift</button>
+                            </div>
+                            <ul t-else="" class="ba_rows">
+                                <li t-if="!todayRows.length" class="ba_rows_empty">No shifts match this filter.</li>
+                                <li t-foreach="todayRows" t-as="row" t-key="row.id">
+                                    <button class="ba_row" t-on-click="() => this.openShiftRow(row)" t-att-aria-label="'Open shift for ' + row.employee + ', ' + row.time_label + ', ' + row.status_label">
+                                        <span t-att-class="'ba_avatar ba_tone_' + row.tone" aria-hidden="true" t-esc="row.initials"/>
+                                        <span class="ba_row_main"><strong t-esc="row.employee"/><span t-esc="row.name"/></span>
+                                        <span class="ba_row_time"><i class="fa fa-clock-o me-1" aria-hidden="true"/><t t-esc="row.time_label"/></span>
+                                        <span class="ba_row_place"><t t-if="row.location"><i class="fa fa-map-marker me-1" aria-hidden="true"/><t t-esc="row.location"/></t></span>
+                                        <span t-att-class="'ba_badge ba_tone_' + row.tone"><span class="ba_status_dot" aria-hidden="true"/><t t-esc="row.status_label"/></span>
+                                        <i class="fa fa-angle-right ba_chevron" aria-hidden="true"/>
+                                    </button>
+                                </li>
+                            </ul>
+                            <p t-if="d.today.limited" class="ba_footnote">Showing the first 60 shifts. Open the calendar for the full day.</p>
                         </section>
-                        <section t-if="!d.can_work" class="ba_panel ba_empty"><span class="ba_empty_icon"><i class="fa fa-home" aria-hidden="true"/></span><h2>Your workspace is ready</h2><p>Use the available summaries and quick actions to get started.</p><small>Contact your administrator if you need Work Management access.</small></section>
+
+                        <!-- Administrator: two-week coverage planner; a day opens the shift dialog -->
+                        <section t-if="d.coverage" class="ba_panel ba_planner_panel">
+                            <div class="ba_panel_heading">
+                                <div><h2>14-day planner</h2><p><t t-esc="d.coverage.period"/> · select a day to add a shift</p></div>
+                                <div class="ba_legend" aria-hidden="true"><span><i class="ba_legend_dot is_published"/>Published</span><span><i class="ba_legend_dot is_draft"/>Draft</span></div>
+                            </div>
+                            <div class="ba_planner">
+                                <button t-foreach="d.coverage.days" t-as="day" t-key="day.date" t-att-class="'ba_plan_day' + (day.today ? ' is_today' : '') + (day.past ? ' is_past' : '') + (day.count ? '' : ' is_empty')" t-att-disabled="day.past" t-on-click="() => this.onDayClick(day)" t-att-title="dayTitle(day)" t-att-aria-label="dayTitle(day) + (day.past ? '' : '. Add a shift')">
+                                    <span class="ba_day_label"><t t-esc="day.label"/><t t-if="day.week_start or day.number === 1"> <t t-esc="day.month"/></t></span>
+                                    <strong t-esc="day.number"/>
+                                    <span class="ba_plan_counts">
+                                        <span t-if="day.published" class="ba_plan_pill is_published" t-esc="day.published"/>
+                                        <span t-if="day.draft" class="ba_plan_pill is_draft" t-esc="day.draft"/>
+                                        <span t-if="!day.count" class="ba_plan_none">—</span>
+                                    </span>
+                                    <i t-if="!day.past" class="fa fa-plus ba_plan_add" aria-hidden="true"/>
+                                </button>
+                            </div>
+                        </section>
+
+                        <!-- Employee: own published 14 day roster -->
+                        <section t-if="d.schedule and !d.admin" class="ba_panel ba_schedule_panel">
+                            <div class="ba_panel_heading">
+                                <div><h2>My shifts</h2><p><t t-esc="d.schedule.period"/> · <i class="fa fa-globe" aria-hidden="true"/> <t t-esc="d.schedule.timezone"/><t t-if="d.schedule.planned_hours"> · <t t-esc="d.schedule.planned_hours"/> h planned</t></p></div>
+                                <button class="btn ba_text_action" t-on-click="() => this.openSection('work_schedule')">Open calendar<i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button>
+                            </div>
+                            <div class="ba_planner is_compact" aria-label="Two week roster overview">
+                                <div t-foreach="d.schedule.days" t-as="day" t-key="day.date" t-att-class="'ba_plan_day' + (day.today ? ' is_today' : '') + (day.past ? ' is_past' : '') + (day.count ? '' : ' is_empty')" t-att-aria-current="day.today ? 'date' : undefined" t-att-title="day.date + ': ' + day.count + ' shifts'">
+                                    <span class="ba_day_label" t-esc="day.label"/><strong t-esc="day.number"/>
+                                    <span class="ba_plan_counts"><span t-if="day.count" class="ba_plan_pill is_published" t-esc="day.count"/><span t-else="" class="ba_plan_none">—</span></span>
+                                </div>
+                            </div>
+                            <div t-if="!d.schedule.shifts.length" class="ba_empty_inline">
+                                <span class="ba_empty_icon"><i class="fa fa-calendar-check-o" aria-hidden="true"/></span>
+                                <div><h3>No published shifts in these two weeks</h3><p>Your coordinator publishes shifts here. Check Team messages for updates, or request leave if you are unavailable.</p></div>
+                            </div>
+                            <div t-else="" class="ba_shift_list">
+                                <button t-foreach="d.schedule.shifts" t-as="shift" t-key="shift.id" t-att-class="'ba_shift_card ba_tone_' + shift.tone + (shift.past ? ' is_past' : '')" t-on-click="() => this.navigate('open_shift', shift.id)" t-att-aria-label="'View shift: ' + shift.name + ', ' + shift.start">
+                                    <div class="ba_shift_date" aria-hidden="true"><span t-esc="shift.day"/><strong t-esc="shift.day_number"/></div>
+                                    <div class="ba_shift_body"><h3 t-esc="shift.name"/><p><span><i class="fa fa-clock-o me-1" aria-hidden="true"/><t t-esc="shift.time_label"/></span><span t-if="shift.location"><i class="fa fa-map-marker me-1" aria-hidden="true"/><t t-esc="shift.location"/></span><span t-if="shift.unpaid_break_minutes"><i class="fa fa-coffee me-1" aria-hidden="true"/><t t-esc="shift.unpaid_break_minutes"/> min unpaid break</span></p><span t-if="shift.tasks" class="ba_shift_tasks"><i class="fa fa-tasks me-1" aria-hidden="true"/><t t-esc="shift.tasks"/></span></div>
+                                    <div class="ba_shift_hours"><span t-att-class="'ba_badge ba_tone_' + shift.tone" t-esc="shift.status_label"/><strong><t t-esc="shift.hours"/> hrs</strong></div><i class="fa fa-angle-right ba_chevron" aria-hidden="true"/>
+                                </button>
+                            </div>
+                            <p t-if="d.schedule.preview_limited" class="ba_footnote">Showing the first 100 shifts. Open the calendar for your complete schedule.</p>
+                        </section>
+
+                        <t t-if="!d.admin" t-call="binaryaid_hrms_dashboard.Metrics"/>
+                        <section t-if="d.can_work and d.recent_work.length" class="ba_panel ba_recent_work">
+                            <div class="ba_panel_heading"><div><h2>Recent work</h2><p>Latest work items by Work Date</p></div><button t-if="d.manager or d.has_employee" class="btn ba_text_action" t-on-click="() => this.openSection(d.manager ? 'employee_work' : 'my_work')">View all<i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button></div>
+                            <div class="table-responsive"><table class="table ba_work_table"><thead><tr><th scope="col">Work item</th><th t-if="d.manager" scope="col">Employee</th><th scope="col">Work Date</th><th scope="col">Status</th><th scope="col"><span class="visually-hidden">Open work</span></th></tr></thead><tbody><tr t-foreach="d.recent_work" t-as="work" t-key="work.id"><td><button class="btn btn-link p-0 text-start" t-on-click="() => this.openWork(work.id)" t-esc="work.name"/></td><td t-if="d.manager" class="ba_muted_cell" t-esc="work.employee"/><td class="text-nowrap ba_muted_cell" t-esc="work.date"/><td><span t-att-class="'ba_badge ' + (work.done ? 'ba_tone_green' : 'ba_tone_amber')"><span class="ba_status_dot"/><t t-esc="work.status"/></span></td><td class="text-end"><button class="btn ba_icon_btn is_small" t-on-click="() => this.openWork(work.id)" t-att-aria-label="'Open ' + work.name"><i class="fa fa-angle-right" aria-hidden="true"/></button></td></tr></tbody></table></div>
+                        </section>
+
+                        <section t-if="d.admin and !d.today and !d.can_work" class="ba_panel ba_empty"><span class="ba_empty_icon"><i class="fa fa-home" aria-hidden="true"/></span><h2>Your workspace is ready</h2><p>Use the figures and inbox to manage today’s work.</p></section>
+                        <section t-if="!d.admin and !d.schedule" class="ba_panel ba_empty"><span class="ba_empty_icon"><i class="fa fa-home" aria-hidden="true"/></span><h2>Your workspace is ready</h2><p>Use the quick links above to get started.</p><small>Contact your administrator if you need roster access.</small></section>
                     </main>
-                    <aside class="ba_side_column" aria-label="Progress and quick actions">
-                        <section t-if="d.can_work" class="ba_panel ba_progress_panel">
-                            <div class="ba_panel_heading"><div><span class="ba_section_kicker" t-esc="d.manager ? 'TEAM MOMENTUM' : 'YOUR MOMENTUM'"/><h2>Monthly progress</h2></div><span class="ba_panel_icon"><i class="fa fa-pie-chart" aria-hidden="true"/></span></div>
-                            <div class="ba_progress_ring" role="progressbar" aria-label="Monthly work completion" t-att-aria-valuenow="d.completion_percent" aria-valuemin="0" aria-valuemax="100" t-att-style="'--ba-progress:' + d.completion_percent + '%' "><div><strong><t t-esc="d.completion_percent"/><small>%</small></strong><span>Completed</span></div></div>
-                            <div class="ba_progress_caption"><strong t-esc="d.month_label"/><p><t t-esc="d.month_done"/> of <t t-esc="d.month_total"/> work items completed</p></div>
-                            <div class="ba_progress_legend"><span><i class="ba_legend_dot"/>Completed <strong t-esc="d.month_done"/></span><span><i class="ba_legend_dot ba_legend_remaining"/>Remaining <strong t-esc="d.month_total - d.month_done"/></span></div>
-                            <p class="ba_panel_footnote">Based on Work Date in the active company</p>
+
+                    <aside t-if="d.admin" class="ba_side_column" aria-label="Inbox and shortcuts">
+                        <!-- Attention inbox: decide on routine requests without leaving the dashboard -->
+                        <section t-if="d.attention.length" class="ba_panel ba_inbox" t-ref="attention">
+                            <div class="ba_panel_heading"><div><h2>Needs attention</h2><p>Act here, or open the full list</p></div></div>
+                            <div class="ba_tabs" role="tablist" aria-label="Attention categories">
+                                <button t-foreach="d.attention" t-as="tab" t-key="tab.key" role="tab" t-att-data-tab="tab.key" t-att-id="'ba_tab_' + tab.key" t-att-aria-controls="'ba_tabpanel_' + tab.key" t-att-aria-selected="state.tab === tab.key ? 'true' : 'false'" t-att-tabindex="state.tab === tab.key ? '0' : '-1'" t-att-class="'ba_tab' + (state.tab === tab.key ? ' is_active' : '')" t-on-click="() => this.selectTab(tab.key)" t-on-keydown="(ev) => this.onTabKeydown(ev, tab_index)">
+                                    <t t-esc="tab.label"/><span t-att-class="'ba_tab_count' + (tab.count ? ' has_items' : '')" t-esc="tab.count"/>
+                                </button>
+                            </div>
+                            <t t-set="tab" t-value="activeTab"/>
+                            <div t-if="tab" class="ba_tabpanel" role="tabpanel" t-att-id="'ba_tabpanel_' + tab.key" t-att-aria-labelledby="'ba_tab_' + tab.key">
+                                <div t-if="!tab.items.length" class="ba_inbox_empty"><i class="fa fa-check-circle" aria-hidden="true"/><span t-esc="tab.empty"/></div>
+                                <ul t-else="" class="ba_inbox_list">
+                                    <li t-foreach="tab.items" t-as="item" t-key="item.source + item.id" t-att-class="'ba_inbox_item ba_tone_' + item.tone">
+                                        <div class="ba_inbox_text">
+                                            <strong t-esc="item.title"/>
+                                            <span t-esc="item.subtitle"/>
+                                            <small t-esc="item.meta"/>
+                                            <span t-if="item.warning" class="ba_inbox_warning"><i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/><t t-esc="item.warning"/></span>
+                                        </div>
+                                        <div class="ba_inbox_actions">
+                                            <button t-foreach="item.actions" t-as="act" t-key="act.name" t-att-class="'btn ba_act ba_act_' + act.style" t-att-disabled="state.busy" t-on-click="() => this.itemAction(item, act)" t-att-aria-label="act.label + ': ' + item.title"><span t-if="isBusy(item, act)" class="spinner-border spinner-border-sm me-1" aria-hidden="true"/><t t-esc="act.label"/></button>
+                                        </div>
+                                    </li>
+                                </ul>
+                                <button t-if="tab.count" class="btn ba_text_action ba_view_all" t-on-click="() => this.openSection(tab.key)">View all <t t-esc="tab.count"/><i class="fa fa-arrow-right ms-2" aria-hidden="true"/></button>
+                            </div>
                         </section>
-                        <section class="ba_panel ba_actions_panel"><div class="ba_panel_heading"><div><span class="ba_section_kicker">MAKE YOUR NEXT MOVE</span><h2>Quick actions</h2></div><span class="ba_panel_icon"><i class="fa fa-bolt" aria-hidden="true"/></span></div><nav class="ba_shortcuts" aria-label="HRMS shortcuts"><button t-foreach="d.shortcuts" t-as="link" t-key="link.key" class="ba_shortcut" t-on-click="() => this.openSection(link.key)"><span class="ba_shortcut_icon"><i t-att-class="'fa ' + link.icon" aria-hidden="true"/></span><span t-esc="link.label"/><i class="fa fa-angle-right ba_shortcut_arrow" aria-hidden="true"/></button></nav></section>
-                        <div class="ba_scope_note"><i class="fa fa-shield" aria-hidden="true"/><p>Made for your role.<br/><span>Your overview reflects your access and active company.</span></p></div>
+                        <section class="ba_panel ba_actions_panel">
+                            <div class="ba_panel_heading"><div><h2>Shortcuts</h2></div></div>
+                            <nav class="ba_shortcuts" aria-label="HRMS shortcuts"><button t-foreach="d.shortcuts" t-as="link" t-key="link.key" class="ba_shortcut" t-on-click="() => this.openSection(link.key)"><span class="ba_shortcut_icon"><i t-att-class="'fa ' + link.icon" aria-hidden="true"/></span><span t-esc="link.label"/><i class="fa fa-angle-right ba_chevron" aria-hidden="true"/></button></nav>
+                        </section>
+                        <p class="ba_scope_note"><i class="fa fa-shield me-2" aria-hidden="true"/>Figures reflect your access and the active company. Care notes and incident details are never shown here.</p>
                     </aside>
                 </div>
-                <footer class="ba_footer"><span>ADC HRMS <span class="ba_footer_dot">·</span> Your people. Your workplace.</span><span><i class="fa fa-refresh me-1" aria-hidden="true"/>Refresh to see the latest changes</span></footer>
             </t>
         </div>
     </div>
