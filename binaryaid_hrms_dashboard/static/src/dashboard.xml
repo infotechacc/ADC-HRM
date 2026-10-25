@@ -32,7 +32,7 @@
                 </header>
 
                 <!-- Worker home: current shift status and large touch targets -->
-                <section t-if="!d.admin and (d.schedule or d.presence)" t-att-class="'ba_status_banner' + (d.schedule and d.schedule.active ? ' is_active' : '')" aria-live="polite">
+                <section t-if="!d.admin and (d.schedule or d.presence) and !(d.clock and d.clock.action)" t-att-class="'ba_status_banner' + (d.schedule and d.schedule.active ? ' is_active' : '')" aria-live="polite">
                     <span class="ba_status_icon"><i t-att-class="'fa ' + (d.schedule and d.schedule.active ? 'fa-play-circle' : 'fa-calendar-o')" aria-hidden="true"/></span>
                     <div class="ba_status_text">
                         <t t-if="d.schedule and d.schedule.active">

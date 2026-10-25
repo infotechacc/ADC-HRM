@@ -64,7 +64,7 @@ class Incident(models.Model):
             incident.allowed_client_ids = clients
 
     def _is_reviewer(self):
-        return self.env.user.has_group('binaryaid_care.group_care_reviewer')
+        return self.env.su or self.env.user.has_group('binaryaid_care.group_care_reviewer')
 
     def _permitted_clients(self, when):
         """Clients the worker supports around this time (published shifts within a day)."""

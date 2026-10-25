@@ -4,7 +4,6 @@ from odoo.tools import format_date, format_datetime
 
 from odoo.addons.binaryaid_hrms_dashboard.models.dashboard import ATTENTION_LIMIT
 
-from .tools import fortnight_start
 
 
 class HrmsDashboard(models.AbstractModel):
@@ -15,7 +14,9 @@ class HrmsDashboard(models.AbstractModel):
         return super()._is_admin() or self.env.user.has_group('binaryaid_care.group_care_reviewer')
 
     def _roster_start(self):
-        return fortnight_start(self.env, fields.Date.context_today(self))
+        # Dashboards look ahead: today plus the next 13 days. The configured fortnight
+        # anchor drives timesheet periods (see binaryaid_care_timesheet).
+        return fields.Date.context_today(self)
 
     def _care_document_domain(self):
         domain = [('company_id', '=', self.env.company.id), ('expiry_state', 'in', ['expiring', 'expired'])]

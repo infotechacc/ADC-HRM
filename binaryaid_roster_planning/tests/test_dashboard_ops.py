@@ -134,6 +134,7 @@ class TestDashboardOperationsUI(HttpCase):
             };
             const byText = (selector, text) => [...document.querySelectorAll(selector)].find(el => el.textContent.includes(text));
             await wait(() => document.querySelector('.ba_inbox'), 'attention inbox');
+            (await wait(() => document.querySelector('[data-tab="unpublished"]'), 'drafts tab')).click();
             const item = await wait(() => byText('.ba_inbox_item', 'Inline publish shift'), 'draft in inbox');
             item.querySelector('.ba_act_success').click();
             await wait(() => !byText('.ba_inbox_item', 'Inline publish shift'), 'draft removed after publish');
