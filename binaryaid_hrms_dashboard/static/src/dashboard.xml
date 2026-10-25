@@ -53,6 +53,7 @@
                     </div>
                     <span t-if="d.presence" t-att-class="'ba_presence' + (d.presence.checked_in ? ' is_in' : '')"><span class="ba_presence_dot" aria-hidden="true"/><t t-if="d.presence.checked_in">Signed in since <t t-esc="d.presence.since"/></t><t t-else="">Not signed in</t></span>
                 </section>
+                <div class="ba_worker_actions_slot"/>
                 <nav t-if="!d.admin" class="ba_tiles" aria-label="Quick links">
                     <button t-foreach="d.shortcuts" t-as="link" t-key="link.key" class="ba_tile" t-on-click="() => this.openSection(link.key)"><span class="ba_tile_icon"><i t-att-class="'fa ' + link.icon" aria-hidden="true"/></span><span t-esc="link.label"/></button>
                 </nav>
@@ -80,7 +81,7 @@
                                 <li t-foreach="todayRows" t-as="row" t-key="row.id">
                                     <button class="ba_row" t-on-click="() => this.openShiftRow(row)" t-att-aria-label="'Open shift for ' + row.employee + ', ' + row.time_label + ', ' + row.status_label">
                                         <span t-att-class="'ba_avatar ba_tone_' + row.tone" aria-hidden="true" t-esc="row.initials"/>
-                                        <span class="ba_row_main"><strong t-esc="row.employee"/><span t-esc="row.name"/></span>
+                                        <span class="ba_row_main"><strong t-esc="row.employee"/><span><t t-if="row.client"><t t-esc="row.client"/> · </t><t t-esc="row.name"/></span></span>
                                         <span class="ba_row_time"><i class="fa fa-clock-o me-1" aria-hidden="true"/><t t-esc="row.time_label"/></span>
                                         <span class="ba_row_place"><t t-if="row.location"><i class="fa fa-map-marker me-1" aria-hidden="true"/><t t-esc="row.location"/></t></span>
                                         <span t-att-class="'ba_badge ba_tone_' + row.tone"><span class="ba_status_dot" aria-hidden="true"/><t t-esc="row.status_label"/></span>
@@ -130,7 +131,7 @@
                             <div t-else="" class="ba_shift_list">
                                 <button t-foreach="d.schedule.shifts" t-as="shift" t-key="shift.id" t-att-class="'ba_shift_card ba_tone_' + shift.tone + (shift.past ? ' is_past' : '')" t-on-click="() => this.navigate('open_shift', shift.id)" t-att-aria-label="'View shift: ' + shift.name + ', ' + shift.start">
                                     <div class="ba_shift_date" aria-hidden="true"><span t-esc="shift.day"/><strong t-esc="shift.day_number"/></div>
-                                    <div class="ba_shift_body"><h3 t-esc="shift.name"/><p><span><i class="fa fa-clock-o me-1" aria-hidden="true"/><t t-esc="shift.time_label"/></span><span t-if="shift.location"><i class="fa fa-map-marker me-1" aria-hidden="true"/><t t-esc="shift.location"/></span><span t-if="shift.unpaid_break_minutes"><i class="fa fa-coffee me-1" aria-hidden="true"/><t t-esc="shift.unpaid_break_minutes"/> min unpaid break</span></p><span t-if="shift.tasks" class="ba_shift_tasks"><i class="fa fa-tasks me-1" aria-hidden="true"/><t t-esc="shift.tasks"/></span></div>
+                                    <div class="ba_shift_body"><h3><t t-if="shift.client"><t t-esc="shift.client"/> · </t><t t-esc="shift.name"/></h3><p><span><i class="fa fa-clock-o me-1" aria-hidden="true"/><t t-esc="shift.time_label"/></span><span t-if="shift.location"><i class="fa fa-map-marker me-1" aria-hidden="true"/><t t-esc="shift.location"/></span><span t-if="shift.unpaid_break_minutes"><i class="fa fa-coffee me-1" aria-hidden="true"/><t t-esc="shift.unpaid_break_minutes"/> min unpaid break</span></p><span t-if="shift.tasks" class="ba_shift_tasks"><i class="fa fa-tasks me-1" aria-hidden="true"/><t t-esc="shift.tasks"/></span></div>
                                     <div class="ba_shift_hours"><span t-att-class="'ba_badge ba_tone_' + shift.tone" t-esc="shift.status_label"/><strong><t t-esc="shift.hours"/> hrs</strong></div><i class="fa fa-angle-right ba_chevron" aria-hidden="true"/>
                                 </button>
                             </div>

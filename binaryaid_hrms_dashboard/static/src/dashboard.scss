@@ -207,3 +207,4 @@
     }
     @media (prefers-reduced-motion: reduce) { button, .ba_plan_add { transition: none; } .fa-spin { animation: none; } }
 }
+.ba_dashboard .ba_worker_actions_slot:empty { display: none; }

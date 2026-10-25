@@ -60,6 +60,12 @@ export class HrmsDashboard extends Component {
     openSection(key) { return this.navigate("open_section", key); }
     openWork(id) { return this.navigate("open_work", id); }
     async quick(key, date = false) {
+        if (key.startsWith("tab:")) {
+            // In-dashboard shortcut: open an inbox tab instead of navigating away.
+            this.selectTab(key.slice(4));
+            this.attentionRef.el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            return;
+        }
         try {
             await this.run(await this.orm.call("binaryaid.hrms.dashboard", "quick_action", [key, date]));
         } catch (error) {
