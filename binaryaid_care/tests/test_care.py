@@ -25,6 +25,8 @@ class CareCase(TransactionCase):
         cls.other_client = Client.create({'name': 'Client Two', 'reference': 'P-002'})
         cls.location = cls.client.location_ids
         cls.location.action_verify_coordinates()
+        # ADC chooses which worker documents are required; the tests require the screening check.
+        cls.env.ref('binaryaid_care.category_worker_screening').required = True
         # Required worker documents are satisfied for Alice so publication is not flagged.
         for document in cls.env['binaryaid.care.document'].search([('employee_id', '=', cls.alice.id)]):
             cls.env['binaryaid.care.document.version'].with_user(cls.admin)._create_version(
