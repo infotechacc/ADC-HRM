@@ -6,6 +6,7 @@ class Announcement(models.Model):
     _name = 'binaryaid.care.announcement'
     _description = 'Team Message'
     _inherit = ['mail.thread']
+    _rec_name = 'title'
     _order = 'sent_on desc, id desc'
     _check_company_auto = True
 
