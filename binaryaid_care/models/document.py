@@ -94,6 +94,16 @@ class DocumentCategory(models.Model):
         string='Required for rostering',
         help='Worker: publishing a shift is flagged when this document is missing or expired.')
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        categories = super().create(vals_list)
+        # A new category immediately appears as missing on every existing client or worker.
+        if categories.filtered(lambda c: c.applies_to == 'client'):
+            self.env['binaryaid.care.client'].sudo().search([]).action_prepare_documents()
+        if categories.filtered(lambda c: c.applies_to == 'employee'):
+            self.env['hr.employee'].sudo().search([]).action_binaryaid_prepare_documents()
+        return categories
+
 
 class CareDocument(models.Model):
     _name = 'binaryaid.care.document'
