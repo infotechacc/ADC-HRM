@@ -6,11 +6,12 @@ import { _t } from "@web/core/l10n/translation";
 
 const TODAY_FILTERS = [
     { key: "all", label: _t("All") },
-    { key: "attention", label: _t("Needs attention"), statuses: ["late", "signed_out", "draft"] },
+    { key: "attention", label: _t("Attention"), statuses: ["late", "signed_out", "draft", "unfilled"] },
     { key: "working", label: _t("Working"), statuses: ["on_shift", "running"] },
     { key: "upcoming", label: _t("Upcoming"), statuses: ["upcoming"] },
-    { key: "done", label: _t("Done"), statuses: ["completed", "ended"] },
+    { key: "done", label: _t("Finished"), statuses: ["completed", "ended"] },
 ];
+const CALENDAR_ITEMS_PER_DAY = 3;
 
 export class HrmsDashboard extends Component {
     static template = "binaryaid_hrms_dashboard.Dashboard";
@@ -22,6 +23,7 @@ export class HrmsDashboard extends Component {
         this.todayRef = useRef("today");
         this.attentionRef = useRef("attention");
         this.todayFilters = TODAY_FILTERS;
+        this.calendarLimit = CALENDAR_ITEMS_PER_DAY;
         this.state = useState({ data: null, loading: true, error: false, tab: null, todayFilter: "all", busy: null });
         onWillStart(() => this.load());
     }
@@ -31,9 +33,12 @@ export class HrmsDashboard extends Component {
         try {
             const data = await this.orm.call("binaryaid.hrms.dashboard", "get_overview", []);
             const tabs = data.attention || [];
-            if (!tabs.some((tab) => tab.key === this.state.tab)) {
-                // Open the first tab that has work waiting, so the inbox starts on something actionable.
-                this.state.tab = (tabs.find((tab) => tab.count) || tabs[0] || {}).key || null;
+            if (this.state.tab && !tabs.some((tab) => tab.key === this.state.tab && tab.count)) {
+                this.state.tab = null;
+            }
+            if (this.state.tab === null) {
+                // Start with the first category that has work waiting.
+                this.state.tab = (tabs.find((tab) => tab.count) || {}).key || false;
             }
             this.state.data = data;
         } catch {
@@ -61,9 +66,7 @@ export class HrmsDashboard extends Component {
     openWork(id) { return this.navigate("open_work", id); }
     async quick(key, date = false) {
         if (key.startsWith("tab:")) {
-            // In-dashboard shortcut: open an inbox tab instead of navigating away.
-            this.selectTab(key.slice(4));
-            this.attentionRef.el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            this.selectTab(key.slice(4), true);
             return;
         }
         try {
@@ -97,31 +100,29 @@ export class HrmsDashboard extends Component {
     isBusy(item, action) {
         return this.state.busy === `${item.source}-${item.id}-${action.name}`;
     }
-    get activeTab() {
-        return (this.state.data?.attention || []).find((tab) => tab.key === this.state.tab);
+
+    // Action list ----------------------------------------------------------------
+    get openTabs() {
+        return (this.state.data?.attention || []).filter((tab) => tab.count);
+    }
+    get clearTabs() {
+        return (this.state.data?.attention || []).filter((tab) => !tab.count);
     }
     get attentionTotal() {
-        return (this.state.data?.attention || []).reduce((total, tab) => total + tab.count, 0);
+        return this.openTabs.reduce((total, tab) => total + tab.count, 0);
     }
-    selectTab(key) {
-        this.state.tab = key;
-    }
-    onTabKeydown(ev, index) {
-        const tabs = this.state.data.attention;
-        const step = { ArrowRight: 1, ArrowLeft: -1 }[ev.key];
-        if (!step) {
-            return;
+    selectTab(key, scroll = false) {
+        this.state.tab = this.state.tab === key && !scroll ? false : key;
+        if (scroll) {
+            this.attentionRef.el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
-        const next = tabs[(index + step + tabs.length) % tabs.length];
-        this.selectTab(next.key);
-        ev.currentTarget.parentElement.querySelector(`[data-tab="${next.key}"]`)?.focus();
+    }
+    cardValue(key) {
+        return (this.state.data?.cards || []).find((card) => card.key === key)?.value || 0;
     }
     openCard(card) {
-        const tabs = this.state.data.attention || [];
-        if (tabs.some((tab) => tab.key === card.key)) {
-            this.selectTab(card.key);
-            this.attentionRef.el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            return;
+        if ((this.state.data.attention || []).some((tab) => tab.key === card.key)) {
+            return this.selectTab(card.key, true);
         }
         if (card.key === "shifts_today" && this.todayRef.el) {
             this.state.todayFilter = "all";
@@ -130,6 +131,8 @@ export class HrmsDashboard extends Component {
         }
         return this.openSection(card.key);
     }
+
+    // Today and calendar -----------------------------------------------------------
     get todayRows() {
         const rows = this.state.data?.today?.rows || [];
         const filter = TODAY_FILTERS.find((f) => f.key === this.state.todayFilter);
@@ -139,16 +142,22 @@ export class HrmsDashboard extends Component {
         const rows = this.state.data?.today?.rows || [];
         return filter.statuses ? rows.filter((row) => filter.statuses.includes(row.status)).length : rows.length;
     }
-    openShiftRow(row) {
-        return this.itemAction({ source: "shift", id: row.id, title: row.employee }, { name: "open", label: _t("Open") });
+    openShift(id, title) {
+        return this.itemAction({ source: "shift", id, title }, { name: "open", label: _t("Open") });
     }
     onDayClick(day) {
         if (!day.past) {
             return this.quick("create_shift", day.date);
         }
     }
-    dayTitle(day) {
-        return _t("%(date)s: %(published)s published, %(draft)s draft", day);
+
+    // Worker ---------------------------------------------------------------------
+    get upcomingShifts() {
+        return (this.state.data?.schedule?.shifts || []).filter((shift) => !shift.past);
+    }
+    noop() {}
+    cancelLeave(leave) {
+        return this.itemAction({ source: "my_leave", id: leave.id, title: leave.type }, { name: "cancel", label: _t("Cancel") });
     }
 }
 registry.category("actions").add("binaryaid_hrms_dashboard", HrmsDashboard);

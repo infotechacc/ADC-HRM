@@ -1,6 +1,6 @@
 {
     'name': 'BinaryAid Care Fortnightly Timesheets',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Human Resources',
     'summary': 'Fortnightly timesheet review, corrections, approval, locking, reports and export',
     'description': 'Planned shifts, actual clock events, notes and exceptions per employee and fortnight. '

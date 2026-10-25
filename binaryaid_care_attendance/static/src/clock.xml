@@ -2,27 +2,31 @@
 <templates xml:space="preserve">
     <t t-name="binaryaid_care_attendance.ClockCard" t-inherit="binaryaid_hrms_dashboard.Dashboard" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('ba_worker_actions_slot')]" position="inside">
-            <section t-if="d.clock" t-att-class="'ba_clock_card' + (d.clock.action === 'out' ? ' is_in' : '')" aria-live="polite">
+            <section t-if="d.clock" t-att-class="'ba_card ba_clock_card' + (d.clock.action === 'out' ? ' is_in' : '')" aria-live="polite">
                 <t t-if="d.clock.action">
-                    <div class="ba_clock_info">
-                        <span class="ba_clock_kicker"><t t-if="d.clock.action === 'out'">SIGNED IN SINCE <t t-esc="d.clock.since"/></t><t t-else="">READY TO SIGN IN</t></span>
-                        <strong t-esc="d.clock.title"/>
-                        <span><t t-esc="d.clock.time_label"/><t t-if="d.clock.location"> · <t t-esc="d.clock.location"/></t></span>
-                        <span t-if="d.clock.note_draft" class="ba_clock_hint"><i class="fa fa-pencil me-1" aria-hidden="true"/>Your shift note draft is saved.</span>
-                        <span t-if="d.clock.pending_exception" class="ba_clock_hint"><i class="fa fa-hourglass-half me-1" aria-hidden="true"/>An exception is waiting for review.</span>
+                    <div class="ba_clock_top">
+                        <span class="ba_eyebrow"><t t-if="d.clock.action === 'out'">On shift · signed in at <t t-esc="d.clock.since"/></t><t t-else="">Your next shift</t></span>
+                        <span t-if="d.clock.pending_exception" class="badge text-bg-warning">Exception in review</span>
                     </div>
-                    <div class="ba_clock_actions">
-                        <button t-if="d.clock.action === 'in'" class="btn ba_clock_btn" t-att-disabled="clockState.busy" t-on-click="clockIn">
-                            <span t-if="clockState.busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"/><i t-else="" class="fa fa-sign-in me-2" aria-hidden="true"/>Clock In
-                        </button>
-                        <button t-if="d.clock.action === 'out'" class="btn ba_clock_btn is_out" t-on-click="clockOut"><i class="fa fa-sign-out me-2" aria-hidden="true"/>Clock Out</button>
-                        <button t-if="d.clock.action === 'blocked'" class="btn ba_clock_btn" disabled="disabled">Signed in elsewhere</button>
-                        <button class="btn btn-link ba_clock_link" t-on-click="() => this.reportClockException(d.clock.action === 'out' ? 'out' : 'in')">Problem signing <t t-esc="d.clock.action === 'out' ? 'out' : 'in'"/>?</button>
-                    </div>
-                    <p t-if="clockState.error" class="ba_clock_error" role="alert"><i class="fa fa-exclamation-circle me-1" aria-hidden="true"/><t t-esc="clockState.error"/></p>
+                    <strong class="ba_clock_title" t-esc="d.clock.title"/>
+                    <span class="ba_clock_line ba_num" t-esc="d.clock.time_label"/>
+                    <span t-if="d.clock.address or d.clock.location" class="ba_clock_line text-muted">
+                        <t t-esc="d.clock.address or d.clock.location"/>
+                        <a t-if="d.clock.map_url" t-att-href="d.clock.map_url" target="_blank" rel="noopener" class="ms-2">Directions</a>
+                    </span>
+                    <p t-if="d.clock.plan" class="ba_clock_plan"><span class="ba_eyebrow d-block">Shift plan</span><t t-esc="d.clock.plan"/></p>
+                    <span t-if="d.clock.note_draft" class="ba_clock_line text-muted"><i class="fa fa-pencil me-1" aria-hidden="true"/>Your shift note draft is saved.</span>
+                    <button t-if="d.clock.action === 'in'" type="button" class="btn btn-primary btn-lg ba_clock_btn" t-att-disabled="clockState.busy" t-on-click="clockIn">
+                        <span t-if="clockState.busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"/>Clock In
+                    </button>
+                    <button t-if="d.clock.action === 'out'" type="button" class="btn btn-danger btn-lg ba_clock_btn" t-on-click="clockOut">Clock Out</button>
+                    <button t-if="d.clock.action === 'blocked'" type="button" class="btn btn-secondary btn-lg ba_clock_btn" disabled="disabled">Signed in elsewhere</button>
+                    <p t-if="clockState.error" class="alert alert-danger mb-0 mt-2 py-2" role="alert" t-esc="clockState.error"/>
+                    <button type="button" class="btn btn-link ba_clock_link" t-on-click="() => this.reportClockException(d.clock.action === 'out' ? 'out' : 'in')">Can't sign <t t-esc="d.clock.action === 'out' ? 'out' : 'in'"/>? Report a problem</button>
                 </t>
                 <t t-else="">
-                    <div class="ba_clock_info"><span class="ba_clock_kicker">CLOCK</span><strong>No shift to sign in to right now</strong><span>Clock In appears shortly before your next published shift starts.</span></div>
+                    <span class="ba_eyebrow">Clock</span>
+                    <span class="ba_clock_line text-muted">Clock In opens <t t-esc="d.clock.early"/> minutes before your next published shift.</span>
                 </t>
             </section>
         </xpath>
