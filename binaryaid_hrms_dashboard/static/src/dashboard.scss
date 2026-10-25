@@ -51,7 +51,7 @@
     .ba_header_title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
     .ba_header_sub { color: var(--ba-muted); font-size: 13px; }
     .ba_header_actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; .btn { border-radius: 8px; } }
-    .ba_body { padding: 20px 24px 32px; max-width: 1600px; }
+    .ba_body { padding: 20px 24px 32px; }
 
     // Figures: colourful cards; a card is tinted when it needs action.
     .ba_metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
