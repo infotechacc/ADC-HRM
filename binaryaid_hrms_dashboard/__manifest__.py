@@ -1,8 +1,8 @@
 {
     'name': 'BinaryAid HRMS Dashboard',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Human Resources',
-    'summary': 'Role-aware HRMS overview and default staff landing page',
+    'summary': 'Centralised operations dashboard and worker home screen',
     'author': 'BinaryAid',
     'license': 'LGPL-3',
     'depends': ['binaryaid_work_management'],

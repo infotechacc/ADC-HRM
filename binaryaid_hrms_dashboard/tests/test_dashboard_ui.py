@@ -47,8 +47,8 @@ class TestDashboardUI(HttpCase):
                 if (!dashboard || !dashboard.textContent.includes('Review onboarding documents')) {
                     throw new Error('Work items did not load');
                 }
-                if (!dashboard.querySelector('[role="progressbar"]')) {
-                    throw new Error('Monthly progress is missing');
+                if (!dashboard.querySelector('.ba_metrics')) {
+                    throw new Error('Key figures are missing');
                 }
                 if (dashboard.scrollWidth > dashboard.clientWidth + 1) {
                     throw new Error('Dashboard overflows horizontally');

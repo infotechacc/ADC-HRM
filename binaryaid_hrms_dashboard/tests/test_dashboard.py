@@ -30,7 +30,9 @@ class TestDashboard(TransactionCase):
         self.assertEqual(data['completion_percent'], 100)
         self.assertEqual([row['id'] for row in data['recent_work']], self.task.ids)
         self.assertNotIn('employees', cards)
-        self.assertEqual({link['key'] for link in data['shortcuts']}, {'my_work', 'discuss'})
+        self.assertTrue({'my_work', 'discuss', 'profile'}.issubset({link['key'] for link in data['shortcuts']}))
+        self.assertFalse(data['admin'])
+        self.assertFalse(data['attention'])
         for key in ('work_today', 'work_done'):
             action = dashboard.open_section(key)
             self.assertEqual(self.env['project.task'].with_user(self.alice).search(action['domain']), self.task.with_user(self.alice))
@@ -40,12 +42,19 @@ class TestDashboard(TransactionCase):
                 dashboard.open_section(key)
         with self.assertRaises(AccessError):
             dashboard.open_work(self.other_task.id)
+        with self.assertRaises(AccessError):
+            dashboard.quick_action('add_employee')
+        with self.assertRaises(AccessError):
+            dashboard.item_action('document', self.employee.id, 'open')
+        self.assertEqual(dashboard.open_section('profile')['res_model'], 'res.users')
 
     def test_manager_and_active_company(self):
         dashboard = self.dashboard.with_user(self.manager)
         data = dashboard.get_overview()
         self.assertTrue(data['manager'])
-        self.assertIn('employees', {card['key'] for card in data['cards']})
+        self.assertTrue(data['admin'])
+        self.assertIn('employees', {link['key'] for link in data['shortcuts']})
+        self.assertEqual(dashboard.open_section('employees')['res_model'], 'hr.employee')
         self.assertTrue({'employee_work', 'history'}.issubset({link['key'] for link in data['shortcuts']}))
         self.assertEqual(dashboard.open_section('employee_work')['res_model'], 'binaryaid.work.employee')
         self.assertEqual(dashboard.open_section('history')['res_model'], 'binaryaid.work.log')
