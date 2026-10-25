@@ -1,6 +1,6 @@
 {
     'name': 'BinaryAid Care Attendance, Notes and Incidents',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Human Resources',
     'summary': 'Location verified clock in/out, shift notes, attendance exceptions and incident reports',
     'description': 'Worker clock in/out for assigned published shifts, verified on the server within the '

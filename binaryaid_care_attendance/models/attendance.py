@@ -54,9 +54,18 @@ class AttendanceException(models.Model):
                              default='submitted', required=True, readonly=True, tracking=True)
     state_priority = fields.Integer(compute='_compute_state_priority', store=True)
     approved_time = fields.Datetime(tracking=True, help='Time recorded on approval; defaults to the requested time.')
+    approved_check_out = fields.Datetime(
+        string='Approved sign out', tracking=True,
+        help='Missed sign in on a shift that has already ended: the sign out recorded with it. Defaults to the scheduled end.')
+    shift_ended = fields.Boolean(compute='_compute_shift_ended')
     review_note = fields.Text(tracking=True)
     reviewer_id = fields.Many2one('res.users', readonly=True, tracking=True)
     attendance_id = fields.Many2one('hr.attendance', readonly=True, ondelete='set null')
+
+    def _compute_shift_ended(self):
+        now = fields.Datetime.now()
+        for record in self:
+            record.shift_ended = bool(record.shift_id.end and record.shift_id.end <= now)
 
     @api.depends('state')
     def _compute_state_priority(self):
@@ -78,7 +87,7 @@ class AttendanceException(models.Model):
     def write(self, vals):
         if not self.env.su:
             self._check_reviewer()
-            if set(vals) - {'approved_time', 'review_note'} or self.filtered(lambda e: e.state != 'submitted'):
+            if set(vals) - {'approved_time', 'approved_check_out', 'review_note'} or self.filtered(lambda e: e.state != 'submitted'):
                 raise AccessError(_('Reviewed exceptions are kept unchanged.'))
         return super().write(vals)
 
@@ -96,9 +105,16 @@ class AttendanceException(models.Model):
             Attendance = self.env['hr.attendance'].sudo()
             record.employee_id.sudo().lock_for_update()
             if record.clock_type == 'in':
-                attendance = Attendance.create({
-                    'employee_id': record.employee_id.id, 'check_in': when, 'binaryaid_shift_id': shift.id,
-                    'in_mode': 'binaryaid_exception', 'in_location': _('Approved exception %s', record.name)})
+                values = {'employee_id': record.employee_id.id, 'check_in': when, 'binaryaid_shift_id': shift.id,
+                          'in_mode': 'binaryaid_exception', 'in_location': _('Approved exception %s', record.name)}
+                if shift.end <= fields.Datetime.now():
+                    # The shift is over: record the sign out too, so the worker is not left signed in.
+                    check_out = record.approved_check_out or shift.end
+                    if check_out <= when:
+                        raise ValidationError(_('The approved sign out must be after the approved sign in.'))
+                    values.update(check_out=check_out, out_mode='binaryaid_exception',
+                                  out_location=_('Approved exception %s', record.name))
+                attendance = Attendance.create(values)
             else:
                 attendance = Attendance.search([('employee_id', '=', record.employee_id.id), ('check_out', '=', False),
                                                 ('binaryaid_shift_id', '=', shift.id)], limit=1)

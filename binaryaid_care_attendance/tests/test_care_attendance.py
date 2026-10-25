@@ -147,6 +147,21 @@ class TestCareClock(TransactionCase):
         self.assertEqual(exception.attendance_id.check_out, self.shift.end)
 
 
+    def test_missed_sign_in_on_ended_shift_is_closed(self):
+        ended = self.env['binaryaid.work.shift'].with_user(self.admin).create({
+            'name': 'Yesterday', 'employee_id': self.worker.id, 'client_id': self.client.id,
+            'service_location_id': self.location.id, 'start': self.shift.start - timedelta(days=1),
+            'end': self.shift.start - timedelta(days=1) + timedelta(hours=3)})
+        ended._roster_transition_write({'state': 'published', 'published_at': ended.start - timedelta(days=1)})
+        self.dashboard.with_user(self.worker_user).care_report_exception(
+            ended.id, 'gps_failure', 'No GPS', 'in', fields.Datetime.to_string(ended.start))
+        exception = self.env['binaryaid.care.attendance.exception'].search([('shift_id', '=', ended.id)])
+        exception.with_user(self.admin).action_approve()
+        self.assertEqual((exception.attendance_id.check_in, exception.attendance_id.check_out), (ended.start, ended.end))
+        self.assertEqual(self.dashboard.with_user(self.worker_user).get_overview()['clock']['shift_id'], self.shift.id,
+                         'the worker can still clock in to the current shift')
+
+
 @tagged('post_install', '-at_install')
 class TestCareIncidents(TransactionCase):
     @classmethod

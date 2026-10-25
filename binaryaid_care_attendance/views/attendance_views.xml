@@ -41,6 +41,8 @@
                     <group string="Worker explanation"><field name="reason" nolabel="1" colspan="2"/></group>
                     <group string="Review">
                         <field name="approved_time" readonly="state != 'submitted'"/>
+                        <field name="shift_ended" invisible="1"/>
+                        <field name="approved_check_out" readonly="state != 'submitted'" invisible="clock_type != 'in' or not shift_ended" placeholder="Scheduled end of the shift"/>
                         <field name="review_note" readonly="state != 'submitted'"/>
                         <field name="reviewer_id"/><field name="attendance_id"/>
                     </group>
