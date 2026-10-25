@@ -1,0 +1,2 @@
+id,client_id/id,name,street,city,zip,latitude,longitude,timezone,radius_m
+adc_location_0001,adc_client_0001,Home,14 George St,Parramatta,2150,-33.8150,151.0011,Australia/Sydney,50

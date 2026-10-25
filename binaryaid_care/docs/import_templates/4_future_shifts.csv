@@ -1,0 +1,2 @@
+name,employee_id,client_id/id,service_location_id/id,start,end,timezone,unpaid_break_minutes,instructions
+Personal care,Liam Nguyen,adc_client_0001,adc_location_0001,2026-11-02 21:00:00,2026-11-03 01:00:00,Australia/Sydney,30,Morning routine and breakfast
