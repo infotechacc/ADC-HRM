@@ -10,6 +10,10 @@ from .tools import fortnight_start
 class HrmsDashboard(models.AbstractModel):
     _inherit = 'binaryaid.hrms.dashboard'
 
+    def _is_admin(self):
+        # Care reviewers (e.g. clinical leads) use the administration view for incidents and notes.
+        return super()._is_admin() or self.env.user.has_group('binaryaid_care.group_care_reviewer')
+
     def _roster_start(self):
         return fortnight_start(self.env, fields.Date.context_today(self))
 

@@ -1,0 +1,17 @@
+.ba_dashboard {
+    .ba_clock_card { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 18px 20px; margin-bottom: 14px; max-width: 980px;
+        border-radius: var(--ba-radius); background: var(--ba-surface); border: 1px solid var(--ba-border);
+        &.is_in { border-color: #9fd3b8; background: #f2fbf6; } }
+    .ba_clock_info { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 2px;
+        strong { font-size: 16px; font-weight: 650; overflow-wrap: anywhere; } span { font-size: 13px; color: var(--ba-muted); } }
+    .ba_clock_kicker { font-size: 11px !important; font-weight: 700; letter-spacing: 1px; color: var(--ba-accent-dark) !important; }
+    .ba_clock_hint { font-size: 12px !important; color: #a26a0c !important; }
+    .ba_clock_actions { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 200px; }
+    .ba_clock_btn { min-height: 52px; font-size: 16px; font-weight: 700; border-radius: 12px; color: #fff; background: var(--ba-accent); border: 0;
+        &:hover:not(:disabled), &:focus-visible { background: var(--ba-accent-dark); color: #fff; }
+        &.is_out { background: #b93a32; &:hover, &:focus-visible { background: #9a2e27; } }
+        &:disabled { background: #9fb0b7; color: #fff; } }
+    .ba_clock_link { font-size: 12px; padding: 2px; }
+    .ba_clock_error { flex-basis: 100%; margin: 0; padding: 10px 12px; border-radius: 8px; background: #fbe9e7; color: #9a2e27; font-size: 13px; }
+    @media (max-width: 640px) { .ba_clock_actions { flex: 1 1 100%; } }
+}

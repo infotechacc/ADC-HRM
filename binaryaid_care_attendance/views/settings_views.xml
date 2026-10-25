@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.binaryaid.care.attendance</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="binaryaid_care.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='binaryaid_care_roster']" position="after">
+                <block title="Clock and shift notes" name="binaryaid_care_clock">
+                    <setting string="Clock windows" help="Sign in and sign out are accepted only for the worker's own published shift, within these windows.">
+                        <div><label for="binaryaid_clock_in_early_minutes" class="me-2"/><field name="binaryaid_clock_in_early_minutes"/></div>
+                        <div><label for="binaryaid_clock_out_late_minutes" class="me-2"/><field name="binaryaid_clock_out_late_minutes"/></div>
+                    </setting>
+                    <setting string="GPS" help="Distance is checked on the server against each location's radius (default 50 m). No continuous tracking.">
+                        <div><label for="binaryaid_gps_max_accuracy_m" class="me-2"/><field name="binaryaid_gps_max_accuracy_m"/></div>
+                    </setting>
+                    <setting string="Note writing time" help="Choose whether time spent writing the shift note counts as work time.">
+                        <field name="binaryaid_clock_out_time_rule" widget="radio"/>
+                    </setting>
+                </block>
+                <block title="Incidents" name="binaryaid_care_incidents">
+                    <setting string="Escalation" help="Care reviewers receive a to-do for incidents at or above this severity.">
+                        <field name="binaryaid_incident_escalation_severity"/>
+                    </setting>
+                    <setting string="Attachments" help="Maximum size of each photo, video or audio attachment.">
+                        <field name="binaryaid_incident_max_upload_mb"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

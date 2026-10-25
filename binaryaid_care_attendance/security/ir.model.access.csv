@@ -1,0 +1,14 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_exception_user,care.exception.user,model_binaryaid_care_attendance_exception,binaryaid_work_management.group_work_user,1,0,0,0
+access_exception_admin,care.exception.admin,model_binaryaid_care_attendance_exception,binaryaid_work_management.group_work_admin,1,1,0,0
+access_template_user,care.template.user,model_binaryaid_care_note_template,base.group_user,1,0,0,0
+access_template_admin,care.template.admin,model_binaryaid_care_note_template,binaryaid_work_management.group_work_admin,1,1,1,1
+access_question_user,care.question.user,model_binaryaid_care_note_question,base.group_user,1,0,0,0
+access_question_admin,care.question.admin,model_binaryaid_care_note_question,binaryaid_work_management.group_work_admin,1,1,1,1
+access_note_user,care.note.user,model_binaryaid_care_shift_note,base.group_user,1,0,0,0
+access_answer_user,care.answer.user,model_binaryaid_care_shift_note_answer,base.group_user,1,0,0,0
+access_amendment_user,care.amendment.user,model_binaryaid_care_shift_note_amendment,base.group_user,1,0,1,0
+access_incident_category_user,care.incident.category.user,model_binaryaid_care_incident_category,base.group_user,1,0,0,0
+access_incident_category_reviewer,care.incident.category.reviewer,model_binaryaid_care_incident_category,binaryaid_care.group_care_reviewer,1,1,1,1
+access_incident_user,care.incident.user,model_binaryaid_care_incident,base.group_user,1,0,1,0
+access_incident_reviewer,care.incident.reviewer,model_binaryaid_care_incident,binaryaid_care.group_care_reviewer,1,1,1,0

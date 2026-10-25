@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="binaryaid_care_attendance.ClockCard" t-inherit="binaryaid_hrms_dashboard.Dashboard" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('ba_worker_actions_slot')]" position="inside">
+            <section t-if="d.clock" t-att-class="'ba_clock_card' + (d.clock.action === 'out' ? ' is_in' : '')" aria-live="polite">
+                <t t-if="d.clock.action">
+                    <div class="ba_clock_info">
+                        <span class="ba_clock_kicker"><t t-if="d.clock.action === 'out'">SIGNED IN SINCE <t t-esc="d.clock.since"/></t><t t-else="">READY TO SIGN IN</t></span>
+                        <strong t-esc="d.clock.title"/>
+                        <span><t t-esc="d.clock.time_label"/><t t-if="d.clock.location"> · <t t-esc="d.clock.location"/></t></span>
+                        <span t-if="d.clock.note_draft" class="ba_clock_hint"><i class="fa fa-pencil me-1" aria-hidden="true"/>Your shift note draft is saved.</span>
+                        <span t-if="d.clock.pending_exception" class="ba_clock_hint"><i class="fa fa-hourglass-half me-1" aria-hidden="true"/>An exception is waiting for review.</span>
+                    </div>
+                    <div class="ba_clock_actions">
+                        <button t-if="d.clock.action === 'in'" class="btn ba_clock_btn" t-att-disabled="clockState.busy" t-on-click="clockIn">
+                            <span t-if="clockState.busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"/><i t-else="" class="fa fa-sign-in me-2" aria-hidden="true"/>Clock In
+                        </button>
+                        <button t-if="d.clock.action === 'out'" class="btn ba_clock_btn is_out" t-on-click="clockOut"><i class="fa fa-sign-out me-2" aria-hidden="true"/>Clock Out</button>
+                        <button t-if="d.clock.action === 'blocked'" class="btn ba_clock_btn" disabled="disabled">Signed in elsewhere</button>
+                        <button class="btn btn-link ba_clock_link" t-on-click="() => this.reportClockException(d.clock.action === 'out' ? 'out' : 'in')">Problem signing <t t-esc="d.clock.action === 'out' ? 'out' : 'in'"/>?</button>
+                    </div>
+                    <p t-if="clockState.error" class="ba_clock_error" role="alert"><i class="fa fa-exclamation-circle me-1" aria-hidden="true"/><t t-esc="clockState.error"/></p>
+                </t>
+                <t t-else="">
+                    <div class="ba_clock_info"><span class="ba_clock_kicker">CLOCK</span><strong>No shift to sign in to right now</strong><span>Clock In appears shortly before your next published shift starts.</span></div>
+                </t>
+            </section>
+        </xpath>
+    </t>
+
+    <t t-name="binaryaid_care_attendance.ExceptionForm">
+        <div class="ba_exception_form">
+            <label class="form-label" for="ba_ex_kind">What went wrong?</label>
+            <select id="ba_ex_kind" class="form-select mb-3" t-model="props.state.kind">
+                <option t-foreach="props.kinds" t-as="kind" t-key="kind.key" t-att-value="kind.key" t-esc="kind.label"/>
+            </select>
+            <label class="form-label" for="ba_ex_time">Actual time</label>
+            <input id="ba_ex_time" type="datetime-local" class="form-control mb-3" t-model="props.state.time"/>
+            <label class="form-label" for="ba_ex_reason">Explanation</label>
+            <textarea id="ba_ex_reason" class="form-control" rows="3" maxlength="2000" t-model="props.state.reason" placeholder="Tell your coordinator what happened"/>
+            <p class="text-muted small mt-2 mb-0">Your coordinator reviews this before the time is recorded.</p>
+        </div>
+    </t>
+
+    <t t-name="binaryaid_care_attendance.NoteDialog">
+        <Dialog title="state.mode === 'note' ? 'Shift note' : 'Report a sign out problem'" size="'lg'">
+            <div t-if="state.loading" class="text-center p-4"><span class="spinner-border" aria-hidden="true"/></div>
+            <t t-elif="state.form">
+                <p class="text-muted"><t t-esc="state.form.client"/> · <t t-esc="state.form.date"/></p>
+                <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
+                <t t-if="state.mode === 'note'">
+                    <div t-foreach="state.form.questions" t-as="q" t-key="q.id" class="mb-3">
+                        <label class="form-label fw-semibold" t-att-for="'ba_q_' + q.id"><t t-esc="q.label"/><span t-if="q.required" class="text-danger"> *</span></label>
+                        <div t-if="q.help" class="form-text mt-0 mb-1" t-esc="q.help"/>
+                        <textarea t-if="q.type === 'textarea'" t-att-id="'ba_q_' + q.id" class="form-control" rows="3" t-model="state.answers[q.id]"/>
+                        <input t-elif="q.type === 'text'" t-att-id="'ba_q_' + q.id" type="text" class="form-control" t-model="state.answers[q.id]"/>
+                        <input t-elif="q.type === 'number'" t-att-id="'ba_q_' + q.id" type="number" class="form-control" t-model="state.answers[q.id]"/>
+                        <select t-elif="q.type === 'choice'" t-att-id="'ba_q_' + q.id" class="form-select" t-model="state.answers[q.id]">
+                            <option value="">Choose…</option>
+                            <option t-foreach="q.options" t-as="opt" t-key="opt" t-att-value="opt" t-esc="opt"/>
+                        </select>
+                        <div t-elif="q.type === 'yes_no'" class="btn-group" role="radiogroup" t-att-aria-label="q.label">
+                            <button type="button" t-att-class="'btn ' + (state.answers[q.id] === 'yes' ? 'btn-primary' : 'btn-outline-secondary')" t-att-aria-pressed="state.answers[q.id] === 'yes' ? 'true' : 'false'" t-on-click="() => state.answers[q.id] = 'yes'">Yes</button>
+                            <button type="button" t-att-class="'btn ' + (state.answers[q.id] === 'no' ? 'btn-primary' : 'btn-outline-secondary')" t-att-aria-pressed="state.answers[q.id] === 'no' ? 'true' : 'false'" t-on-click="() => state.answers[q.id] = 'no'">No</button>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-0">Submitting saves your note and signs you out together. Your location is checked once.</p>
+                </t>
+                <CareExceptionForm t-else="" kinds="props.clock.kinds" state="state.exception"/>
+            </t>
+            <div t-else="" class="alert alert-danger" role="alert" t-esc="state.error"/>
+            <t t-set-slot="footer">
+                <t t-if="state.form and state.mode === 'note'">
+                    <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="submit"><span t-if="state.busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"/>Submit note and Clock Out</button>
+                    <button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="saveDraftAndClose">Save draft</button>
+                    <button class="btn btn-link" t-on-click="showException">Can't sign out here?</button>
+                </t>
+                <t t-elif="state.form">
+                    <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="submitException">Submit note and exception</button>
+                    <button class="btn btn-secondary" t-on-click="() => state.mode = 'note'">Back to note</button>
+                </t>
+                <button t-else="" class="btn btn-secondary" t-on-click="props.close">Close</button>
+            </t>
+        </Dialog>
+    </t>
+
+    <t t-name="binaryaid_care_attendance.ExceptionDialog">
+        <Dialog title="props.clockType === 'in' ? 'Report a sign in problem' : 'Report a sign out problem'">
+            <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
+            <CareExceptionForm kinds="props.clock.kinds" state="state.exception"/>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="submit">Send for review</button>
+                <button class="btn btn-secondary" t-on-click="props.close">Cancel</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

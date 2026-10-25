@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_note_template_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.note.template.form</field><field name="model">binaryaid.care.note.template</field>
+        <field name="arch" type="xml">
+            <form string="Shift note template">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group><field name="company_id" groups="base.group_multi_company"/><field name="active"/></group>
+                    <div class="alert alert-info" role="status">Changes apply to new notes. Submitted notes keep the question text they were answered with.</div>
+                    <field name="question_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/><field name="label"/><field name="answer_type"/>
+                            <field name="options" placeholder="One option per line"/><field name="help_text"/><field name="required"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_note_templates" model="ir.actions.act_window">
+        <field name="name">Shift Note Templates</field><field name="res_model">binaryaid.care.note.template</field><field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_shift_note_list" model="ir.ui.view">
+        <field name="name">binaryaid.care.shift.note.list</field><field name="model">binaryaid.care.shift.note</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false" decoration-warning="state == 'draft'">
+                <field name="note_date"/><field name="employee_id"/><field name="client_id"/><field name="shift_id"/>
+                <field name="submitted_on"/><field name="state" widget="badge" decoration-success="state == 'submitted'"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_shift_note_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.shift.note.form</field><field name="model">binaryaid.care.shift.note</field>
+        <field name="arch" type="xml">
+            <form string="Shift note" create="false" delete="false" edit="false">
+                <header>
+                    <button name="action_amend" type="object" string="Add amendment" invisible="state != 'submitted'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group><field name="employee_id"/><field name="client_id"/><field name="note_date"/></group>
+                        <group><field name="shift_id"/><field name="clock_out_requested_on"/><field name="submitted_on"/></group>
+                    </group>
+                    <separator string="Original note"/>
+                    <field name="answer_ids">
+                        <list><field name="label" string="Question"/><field name="value" string="Answer"/></list>
+                    </field>
+                    <separator string="Amendments"/>
+                    <field name="amendment_ids">
+                        <list><field name="create_date" string="When"/><field name="author_id"/><field name="reason"/><field name="text"/></list>
+                    </field>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_amendment_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.shift.note.amendment.form</field><field name="model">binaryaid.care.shift.note.amendment</field>
+        <field name="arch" type="xml">
+            <form string="Amend note">
+                <div class="alert alert-info" role="status">The original note stays unchanged. Your amendment is added below it with your name and the time.</div>
+                <group><field name="note_id" readonly="1"/><field name="reason"/><field name="text"/></group>
+            </form>
+        </field>
+    </record>
+    <record id="view_shift_note_search" model="ir.ui.view">
+        <field name="name">binaryaid.care.shift.note.search</field><field name="model">binaryaid.care.shift.note</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/><field name="client_id"/>
+                <filter name="submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter name="drafts" string="Drafts" domain="[('state', '=', 'draft')]"/>
+                <filter name="date" string="Date" date="note_date"/>
+            </search>
+        </field>
+    </record>
+    <record id="action_shift_notes" model="ir.actions.act_window">
+        <field name="name">Shift Notes</field><field name="res_model">binaryaid.care.shift.note</field><field name="view_mode">list,form</field>
+    </record>
+    <record id="action_report_missing_notes" model="ir.actions.act_window">
+        <field name="name">Missing Shift Notes</field><field name="res_model">binaryaid.work.shift</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'published'), ('end', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59')), ('care_note_status', '!=', 'submitted')]</field>
+    </record>
+</odoo>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_attendance_care_form" model="ir.ui.view">
+        <field name="name">hr.attendance.care.form</field><field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Shift verification" invisible="not binaryaid_shift_id">
+                    <group><field name="binaryaid_shift_id"/><field name="binaryaid_client_id"/></group>
+                    <group><field name="binaryaid_in_distance_m"/><field name="binaryaid_in_accuracy_m"/>
+                        <field name="binaryaid_out_distance_m"/><field name="binaryaid_out_accuracy_m"/></group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_exception_list" model="ir.ui.view">
+        <field name="name">binaryaid.care.attendance.exception.list</field><field name="model">binaryaid.care.attendance.exception</field>
+        <field name="arch" type="xml">
+            <list create="false" decoration-warning="state == 'submitted'" decoration-muted="state == 'rejected'">
+                <field name="name"/><field name="employee_id"/><field name="client_id"/><field name="kind"/><field name="clock_type"/>
+                <field name="requested_time"/><field name="distance_m" optional="show"/><field name="state" widget="badge" decoration-warning="state == 'submitted'" decoration-success="state == 'approved'" decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_exception_form" model="ir.ui.view">
+        <field name="name">binaryaid.care.attendance.exception.form</field><field name="model">binaryaid.care.attendance.exception</field>
+        <field name="arch" type="xml">
+            <form string="Attendance exception" create="false">
+                <header>
+                    <button name="action_approve" type="object" string="Approve" class="btn-primary" invisible="state != 'submitted'" groups="binaryaid_work_management.group_work_admin"/>
+                    <button name="action_reject" type="object" string="Reject" invisible="state != 'submitted'" groups="binaryaid_work_management.group_work_admin"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group string="Request"><field name="employee_id"/><field name="shift_id"/><field name="client_id"/><field name="kind"/><field name="clock_type"/><field name="requested_time"/></group>
+                        <group string="Evidence"><field name="latitude"/><field name="longitude"/><field name="accuracy_m"/><field name="distance_m"/></group>
+                    </group>
+                    <group string="Worker explanation"><field name="reason" nolabel="1" colspan="2"/></group>
+                    <group string="Review">
+                        <field name="approved_time" readonly="state != 'submitted'"/>
+                        <field name="review_note" readonly="state != 'submitted'"/>
+                        <field name="reviewer_id"/><field name="attendance_id"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_exception_search" model="ir.ui.view">
+        <field name="name">binaryaid.care.attendance.exception.search</field><field name="model">binaryaid.care.attendance.exception</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/><field name="client_id"/>
+                <filter name="to_review" string="To review" domain="[('state', '=', 'submitted')]"/>
+                <group><filter name="group_kind" string="Type" context="{'group_by': 'kind'}"/></group>
+            </search>
+        </field>
+    </record>
+    <record id="action_exceptions" model="ir.actions.act_window">
+        <field name="name">Clock Exceptions</field><field name="res_model">binaryaid.care.attendance.exception</field>
+        <field name="view_mode">list,form</field><field name="context">{'search_default_to_review': 1}</field>
+    </record>
+</odoo>

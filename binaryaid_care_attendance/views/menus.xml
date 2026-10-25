@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_care_attendance" name="Attendance" parent="binaryaid_care.menu_care_root" sequence="40"
+              groups="binaryaid_work_management.group_work_admin"/>
+    <menuitem id="menu_care_exceptions" name="Clock Exceptions" parent="menu_care_attendance" action="action_exceptions" sequence="10"/>
+    <menuitem id="menu_care_notes" name="Shift Notes" parent="binaryaid_care.menu_care_root" action="action_shift_notes" sequence="45"/>
+    <menuitem id="menu_care_incidents" name="Incidents" parent="binaryaid_care.menu_care_root" action="action_incidents" sequence="50"
+              groups="binaryaid_care.group_care_reviewer"/>
+    <menuitem id="menu_care_my_incidents" name="My Incident Reports" parent="binaryaid_care.menu_care_root" action="action_my_incidents" sequence="51"/>
+    <menuitem id="menu_report_missing_notes" name="Missing Shift Notes" parent="binaryaid_care.menu_care_reports" action="action_report_missing_notes" sequence="40" groups="binaryaid_work_management.group_work_admin"/>
+    <menuitem id="menu_report_incidents" name="Incident Reports" parent="binaryaid_care.menu_care_reports" action="action_incidents" sequence="70" groups="binaryaid_care.group_care_reviewer"/>
+    <menuitem id="menu_care_note_templates" name="Shift Note Templates" parent="binaryaid_care.menu_care_config" action="action_note_templates" sequence="20"/>
+    <menuitem id="menu_care_incident_categories" name="Incident Categories" parent="binaryaid_care.menu_care_config" action="action_incident_categories" sequence="30" groups="binaryaid_care.group_care_reviewer"/>
+</odoo>

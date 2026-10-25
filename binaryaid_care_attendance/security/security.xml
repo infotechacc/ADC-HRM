@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Care notes and incidents are restricted to their author and care reviewers;
+         roster administrators see note status only. -->
+    <record id="rule_exception_company" model="ir.rule">
+        <field name="name">Clock exceptions: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_attendance_exception"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_exception_own" model="ir.rule">
+        <field name="name">Clock exceptions: own</field>
+        <field name="model_id" ref="model_binaryaid_care_attendance_exception"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_user'))]"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_exception_admin" model="ir.rule">
+        <field name="name">Clock exceptions: administrators</field>
+        <field name="model_id" ref="model_binaryaid_care_attendance_exception"/>
+        <field name="groups" eval="[(4, ref('binaryaid_work_management.group_work_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="rule_note_company" model="ir.rule">
+        <field name="name">Shift notes: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_shift_note"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_note_own" model="ir.rule">
+        <field name="name">Shift notes: author</field>
+        <field name="model_id" ref="model_binaryaid_care_shift_note"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_note_reviewer" model="ir.rule">
+        <field name="name">Shift notes: care reviewers</field>
+        <field name="model_id" ref="model_binaryaid_care_shift_note"/>
+        <field name="groups" eval="[(4, ref('binaryaid_care.group_care_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_answer_own" model="ir.rule">
+        <field name="name">Note answers: author</field>
+        <field name="model_id" ref="model_binaryaid_care_shift_note_answer"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('note_id.user_id', '=', user.id)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_answer_reviewer" model="ir.rule">
+        <field name="name">Note answers: care reviewers</field>
+        <field name="model_id" ref="model_binaryaid_care_shift_note_answer"/>
+        <field name="groups" eval="[(4, ref('binaryaid_care.group_care_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_amendment_own" model="ir.rule">
+        <field name="name">Note amendments: author</field>
+        <field name="model_id" ref="model_binaryaid_care_shift_note_amendment"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('note_id.user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_amendment_reviewer" model="ir.rule">
+        <field name="name">Note amendments: care reviewers</field>
+        <field name="model_id" ref="model_binaryaid_care_shift_note_amendment"/>
+        <field name="groups" eval="[(4, ref('binaryaid_care.group_care_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="rule_incident_company" model="ir.rule">
+        <field name="name">Incidents: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_incident"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_incident_own" model="ir.rule">
+        <field name="name">Incidents: reporter</field>
+        <field name="model_id" ref="model_binaryaid_care_incident"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('reported_by_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_incident_reviewer" model="ir.rule">
+        <field name="name">Incidents: care reviewers</field>
+        <field name="model_id" ref="model_binaryaid_care_incident"/>
+        <field name="groups" eval="[(4, ref('binaryaid_care.group_care_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+</odoo>

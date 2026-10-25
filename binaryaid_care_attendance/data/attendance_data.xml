@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_exception" model="ir.sequence">
+        <field name="name">Attendance exception</field><field name="code">binaryaid.care.attendance.exception</field>
+        <field name="prefix">EXC/%(year)s/</field><field name="padding">4</field>
+    </record>
+    <record id="seq_incident" model="ir.sequence">
+        <field name="name">Incident report</field><field name="code">binaryaid.care.incident</field>
+        <field name="prefix">INC/%(year)s/</field><field name="padding">4</field>
+    </record>
+    <!-- Default content. ADC must supply the final note template, categories and severity rules. -->
+    <data noupdate="1">
+        <record id="note_template_default" model="binaryaid.care.note.template">
+            <field name="name">Standard shift note</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <record id="note_q_support" model="binaryaid.care.note.question"><field name="template_id" ref="note_template_default"/><field name="sequence">10</field><field name="label">What support did you provide?</field><field name="answer_type">textarea</field><field name="required" eval="True"/></record>
+        <record id="note_q_wellbeing" model="binaryaid.care.note.question"><field name="template_id" ref="note_template_default"/><field name="sequence">20</field><field name="label">How was the client's wellbeing and mood?</field><field name="answer_type">textarea</field><field name="required" eval="True"/></record>
+        <record id="note_q_goals" model="binaryaid.care.note.question"><field name="template_id" ref="note_template_default"/><field name="sequence">30</field><field name="label">Progress towards goals</field><field name="answer_type">textarea</field><field name="required" eval="False"/></record>
+        <record id="note_q_concern" model="binaryaid.care.note.question"><field name="template_id" ref="note_template_default"/><field name="sequence">40</field><field name="label">Were there any incidents or concerns?</field><field name="help_text">If yes, also submit an incident form.</field><field name="answer_type">yes_no</field><field name="required" eval="True"/></record>
+        <record id="note_q_handover" model="binaryaid.care.note.question"><field name="template_id" ref="note_template_default"/><field name="sequence">50</field><field name="label">Handover for the next worker</field><field name="answer_type">textarea</field><field name="required" eval="False"/></record>
+
+        <record id="incident_cat_injury" model="binaryaid.care.incident.category"><field name="name">Injury or fall</field><field name="sequence">10</field></record>
+        <record id="incident_cat_medication" model="binaryaid.care.incident.category"><field name="name">Medication error</field><field name="sequence">20</field></record>
+        <record id="incident_cat_behaviour" model="binaryaid.care.incident.category"><field name="name">Behaviour of concern</field><field name="sequence">30</field></record>
+        <record id="incident_cat_abuse" model="binaryaid.care.incident.category"><field name="name">Suspected abuse or neglect</field><field name="sequence">40</field></record>
+        <record id="incident_cat_property" model="binaryaid.care.incident.category"><field name="name">Property damage</field><field name="sequence">50</field></record>
+        <record id="incident_cat_health" model="binaryaid.care.incident.category"><field name="name">Health deterioration</field><field name="sequence">60</field></record>
+        <record id="incident_cat_other" model="binaryaid.care.incident.category"><field name="name">Other</field><field name="sequence">90</field></record>
+    </data>
+</odoo>
