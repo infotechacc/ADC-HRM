@@ -120,3 +120,56 @@ class TestCareTimesheet(TransactionCase):
         self.assertIn(sheet.id, [i['id'] for i in tab['items']])
         action = self.env['binaryaid.hrms.dashboard'].with_user(self.admin).item_action('timesheet', sheet.id, 'open')
         self.assertEqual(action['res_id'], sheet.id)
+
+
+@tagged('post_install', '-at_install')
+class TestCareEndToEnd(TransactionCase):
+    """Task 17: request → assignment → attendance → note → timesheet, across all care modules."""
+
+    def test_full_flow(self):
+        admin = new_test_user(self.env, login='e2e_admin', tz='UTC', groups=','.join([
+            'binaryaid_work_management.group_work_admin', 'hr.group_hr_user']))
+        worker_user = new_test_user(self.env, login='e2e_worker', tz='UTC', groups='binaryaid_work_management.group_work_user')
+        worker = self.env['hr.employee'].create({'name': 'E2E Worker', 'user_id': worker_user.id})
+        client = self.env['binaryaid.care.client'].create({'name': 'E2E Client', 'reference': 'E2E-1', 'location_ids': [
+            (0, 0, {'name': 'Home', 'latitude': -33.8688, 'longitude': 151.2093, 'timezone': 'UTC'})]})
+        client.location_ids.action_verify_coordinates()
+        # 1. The client's representative submits a request (portal path covered in binaryaid_care tests).
+        request = self.env['binaryaid.care.client.request'].create({
+            'client_id': client.id, 'support_needs': 'Morning support', 'location_id': client.location_ids.id,
+            'preferred_date_from': fields.Date.today()})
+        board = self.env['binaryaid.hrms.dashboard'].with_user(admin)
+        board.item_action('request', request.id, 'approve')
+        # 2. Admin creates an unfilled shift from the request, assigns a worker and publishes.
+        context = board.item_action('request', request.id, 'create_shift')['context']
+        now = fields.Datetime.now().replace(microsecond=0)
+        context.update(default_start=fields.Datetime.to_string(now - timedelta(minutes=5)),
+                       default_end=fields.Datetime.to_string(now + timedelta(hours=3)))
+        shift = self.env['binaryaid.work.shift'].with_user(admin).with_context(**context).create({})
+        self.assertTrue(shift.is_unfilled)
+        shift.employee_id = worker
+        shift.action_publish()
+        self.assertEqual(request.state, 'scheduled')
+        # 3. Worker signs in on site, reports an incident and signs out with the shift note.
+        worker_board = self.env['binaryaid.hrms.dashboard'].with_user(worker_user)
+        self.assertEqual(worker_board.get_overview()['clock']['action'], 'in')
+        self.assertEqual(worker_board.care_clock_in(shift.id, -33.86885, 151.20935, 5)['status'], 'ok')
+        incident = self.env['binaryaid.care.incident'].with_user(worker_user).create({
+            'client_id': client.id, 'location': 'Kitchen', 'severity': 'low', 'description': 'Minor spill',
+            'immediate_action': 'Cleaned', 'category_id': self.env.ref('binaryaid_care_attendance.incident_cat_other').id})
+        self.assertTrue(incident.name.startswith('INC/'))
+        form = worker_board.care_note_form(shift.id)
+        answers = {q['id']: ('no' if q['type'] == 'yes_no' else 'Done') for q in form['questions']}
+        self.assertEqual(worker_board.care_clock_out(shift.id, answers, -33.86885, 151.20935, 5, 'e2e')['status'], 'ok')
+        attendance = self.env['hr.attendance'].search([('binaryaid_shift_id', '=', shift.id)])
+        self.assertTrue(attendance.check_out and attendance.out_mode == 'binaryaid_gps')
+        self.assertEqual(shift.care_note_status, 'submitted')
+        # 4. The fortnightly timesheet includes the completed shift and can be approved and exported.
+        sheet = self.env['binaryaid.care.timesheet'].with_user(admin)._generate(shift.start.date(), worker)
+        line = sheet.line_ids.filtered(lambda l: l.shift_id == shift)
+        self.assertEqual(line.status, 'complete')
+        sheet.action_approve()
+        sheet.action_lock()
+        self.assertEqual(sheet.approved_hours, line.effective_hours)
+        self.assertEqual(sheet.state, 'locked')
+        self.assertIn('/web/content/', sheet.action_export_csv()['url'])

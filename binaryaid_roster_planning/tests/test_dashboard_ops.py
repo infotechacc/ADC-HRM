@@ -32,7 +32,7 @@ class TestDashboardOperations(TransactionCase):
 
     def test_admin_today_board_and_publication(self):
         now = fields.Datetime.now()
-        before = self.overview()[1]
+        _data, before, before_tabs = self.overview()
         running = self.shift(self.employee, now - timedelta(minutes=30), now + timedelta(hours=2))
         running.action_publish()
         self.env['hr.attendance'].create({'employee_id': self.employee.id, 'check_in': now - timedelta(minutes=25)})
@@ -40,7 +40,7 @@ class TestDashboardOperations(TransactionCase):
         data, cards, tabs = self.overview()
         self.assertTrue(data['admin'])
         self.assertEqual(cards['shifts_today'], before['shifts_today'] + 1)
-        self.assertEqual(cards['unpublished'], before['unpublished'] + 1)
+        self.assertEqual(tabs['unpublished']['count'], before_tabs['unpublished']['count'] + 1)
         self.assertEqual(len(data['coverage']['days']), 14)
         row = next(r for r in data['today']['rows'] if r['id'] == running.id)
         self.assertEqual(row['status'], 'on_shift')
@@ -50,7 +50,7 @@ class TestDashboardOperations(TransactionCase):
         self.assertEqual(dashboard.item_action('shift', draft.id, 'open')['target'], 'new')
         self.assertTrue(dashboard.item_action('shift', draft.id, 'publish'))
         self.assertEqual(draft.state, 'published')
-        self.assertEqual(self.overview()[1]['unpublished'], before['unpublished'])
+        self.assertEqual(self.overview()[2]['unpublished']['count'], before_tabs['unpublished']['count'])
         action = dashboard.with_context(tz='Australia/Sydney').quick_action('create_shift', '2027-01-11')
         self.assertEqual(action['target'], 'new')
         self.assertEqual(action['context']['default_start'], '2027-01-10 22:00:00')
@@ -134,7 +134,8 @@ class TestDashboardOperationsUI(HttpCase):
             };
             const byText = (selector, text) => [...document.querySelectorAll(selector)].find(el => el.textContent.includes(text));
             await wait(() => document.querySelector('.ba_inbox'), 'attention inbox');
-            (await wait(() => document.querySelector('[data-tab="unpublished"]'), 'drafts tab')).click();
+            const draftsTab = await wait(() => document.querySelector('[data-tab="unpublished"]'), 'drafts tab');
+            if (draftsTab.getAttribute('aria-expanded') !== 'true') draftsTab.click();
             const item = await wait(() => byText('.ba_inbox_item', 'Inline publish shift'), 'draft in inbox');
             item.querySelector('.ba_act_success').click();
             await wait(() => !byText('.ba_inbox_item', 'Inline publish shift'), 'draft removed after publish');

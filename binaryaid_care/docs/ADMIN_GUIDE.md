@@ -3,24 +3,25 @@
 ## Your daily dashboard
 Open **HRMS Dashboard** (your home page after login).
 
-- **Top buttons**: Create shift, Add client, Add employee, Review requests.
+- **Header buttons**: Create shift, Add client, Add employee, Review requests.
   They open pop-ups; the dashboard refreshes when you close them.
-- **Figures**: red or amber figures need action. Click a figure to open its list
-  in the *Needs attention* panel.
-- **Today's shifts**: everyone rostered today with live status (*Signed in*,
-  *Not signed in*, *Upcoming*, *Draft*, *Completed*). Use the filter chips;
-  click a row to open the shift.
-- **14-day planner**: published (green) and draft (purple) shifts per day.
-  Click a day to create a shift on it.
-- **Needs attention**: act without leaving the page:
-  - *Requests* – approve client requests, then *Create shift*.
-  - *Clock* – approve GPS / missed sign in or out exceptions (Review to change the time or reject with a note).
-  - *Drafts* – publish shifts. If publishing is blocked, the reason is shown.
-  - *Leave* – approve or refuse. Leave that overlaps published shifts must be
-    resolved first: reassign (Replace / Swap) or cancel those shifts.
-  - *Documents* – expired or expiring client and worker documents.
-  - *Sign-outs*, *Timesheets*, *Notes* (missing shift notes) and *Incidents*
-    (care reviewers only).
+- **Figures bar**: today's shifts, working now, unfilled shifts, client requests,
+  missing sign-outs, clock exceptions, leave to review, timesheet reviews. A figure
+  turns red or amber when it needs action; click it to open the matching list.
+- **Today**: every shift today with time, worker, client, location and live status
+  (Signed in, Not signed in, Upcoming, Draft, Unfilled, Finished). Filter with the
+  buttons above the table; click a row to open the shift.
+- **Next 14 days**: a calendar of the actual shifts (time, worker, client).
+  Published shifts have a solid bar, drafts a dashed bar, unfilled shifts are red.
+  Hover a day and click **+** to create a shift on it.
+- **Action items**: each category with work waiting (Unfilled, Requests, Clock,
+  Drafts, Leave, Documents, Sign-outs, Timesheets, Notes, Incidents). Click a
+  category to expand it and act on each item without leaving the page.
+
+**Shift pop-up**: choose the client (its location and approved care requirements
+appear), the time and, if known, the worker. Leave the worker empty to save an
+**unfilled** shift. *Save draft* keeps it unpublished; *Publish* checks it and
+notifies the worker. If publishing is blocked, the draft is kept and the reason shown.
 
 ## Clients
 Care Operations ▸ Clients. Keep the participant ID, status, authorised contacts,

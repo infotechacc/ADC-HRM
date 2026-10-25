@@ -257,3 +257,60 @@ class TestCarePortal(HttpCase):
         for model in ('hr.employee', 'binaryaid.work.shift', 'hr.attendance'):
             with self.assertRaises(AccessError):
                 self.env[model].with_user(contact.user_id).search([])
+
+
+class TestCareGaps(CareCase):
+    def test_unfilled_shift_lifecycle(self):
+        shift = self.env['binaryaid.work.shift'].with_user(self.admin).create({
+            'name': 'Open shift', 'client_id': self.client.id, 'service_location_id': self.location.id,
+            'start': fields.Datetime.now() + timedelta(days=1), 'end': fields.Datetime.now() + timedelta(days=1, hours=3)})
+        self.assertTrue(shift.is_unfilled)
+        dashboard = self.env['binaryaid.hrms.dashboard'].with_user(self.admin)
+        data = dashboard.get_overview()
+        tab = next(t for t in data['attention'] if t['key'] == 'unfilled')
+        self.assertIn(shift.id, [i['id'] for i in tab['items']])
+        self.assertNotIn(shift.id, [i['id'] for t in data['attention'] if t['key'] == 'unpublished' for i in t['items']])
+        chips = [c for day in data['coverage']['days'] for c in day['items'] if c['id'] == shift.id]
+        self.assertTrue(chips and chips[0]['unfilled'] and chips[0]['client'] == self.client.name)
+        self.assertEqual(dashboard.item_action('shift', shift.id, 'open')['views'][0][0],
+                         self.env.ref('binaryaid_care.view_shift_quick_form').id)
+        with self.assertRaises(ValidationError):
+            shift.action_publish()
+        self.assertEqual(shift.state, 'draft', 'the draft is kept when publication fails')
+        shift.employee_id = self.alice
+        shift.action_publish()
+        self.assertEqual((shift.state, shift.is_unfilled), ('published', False))
+
+    def test_worker_home_navigation_plan_and_leave(self):
+        shift = self.shift(instructions='Prepare lunch and go for a walk')
+        shift.action_publish()
+        leave_type = self.env['hr.leave.type'].create({'name': 'Home leave', 'requires_allocation': False,
+                                                      'leave_validation_type': 'hr'})
+        day = fields.Date.today() + timedelta(days=20)
+        leave = self.env['hr.leave'].with_user(self.alice_user).create({
+            'holiday_status_id': leave_type.id, 'employee_id': self.alice.id, 'request_date_from': day, 'request_date_to': day})
+        board = self.env['binaryaid.hrms.dashboard'].with_user(self.alice_user)
+        data = board.get_overview()
+        self.assertEqual([n['key'] for n in data['worker_nav']],
+                         ['work_schedule', 'my_incidents', 'team_messages', 'my_leave', 'profile']
+                         if 'binaryaid.care.incident' in self.env else ['work_schedule', 'team_messages', 'my_leave', 'profile'])
+        item = next(s for s in data['schedule']['shifts'] if s['id'] == shift.id)
+        self.assertEqual(item['plan'], 'Prepare lunch and go for a walk')
+        self.assertTrue(item['map_url'])
+        mine = next(l for l in data['my_leave'] if l['id'] == leave.id)
+        if mine['can_cancel']:
+            self.assertEqual(board.item_action('my_leave', leave.id, 'cancel')['res_model'], 'hr.holidays.cancel.leave')
+        with self.assertRaises(AccessError):
+            self.env['binaryaid.hrms.dashboard'].with_user(self.bob_user).item_action('my_leave', leave.id, 'cancel')
+
+    def test_document_slots_for_existing_records(self):
+        employee = self.env['hr.employee'].with_context(binaryaid_skip=True).sudo().create({'name': 'Legacy worker'})
+        self.env['binaryaid.care.document'].search([('employee_id', '=', employee.id)]).unlink()
+        from odoo.addons.binaryaid_care import _prepare_document_slots
+        _prepare_document_slots(self.env)
+        worker_categories = self.env['binaryaid.care.document.category'].search_count([('applies_to', '=', 'employee')])
+        self.assertEqual(len(employee.binaryaid_document_ids), worker_categories)
+        category = self.env['binaryaid.care.document.category'].create({'name': 'Vaccination record', 'applies_to': 'employee'})
+        self.assertIn(category, employee.binaryaid_document_ids.category_id)
+        missing = self.env['binaryaid.care.document'].search([('employee_id', '=', employee.id), ('expiry_state', '=', 'missing')])
+        self.assertEqual(len(missing), worker_categories + 1)
