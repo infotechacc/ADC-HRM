@@ -32,20 +32,11 @@ Follows task 02 (central dashboard) and task 08 (worker home screen) of the ADC
 HRMS task list. One client action renders two role-aware layouts.
 
 **Administrators** (Work Management administrators or HR officers):
-- Quick actions in the header open dialogs over the dashboard: Create shift,
-  Add employee. Dialogs refresh the figures when closed.
-- Metric strip: today's shifts, working now, unpublished shifts, missing
-  sign-outs, leave to review, timesheet reviews and document alerts. Alert
-  figures are highlighted. Selecting a metric opens its inbox tab, or its list.
-- Today's shifts with attendance status (signed in / not signed in / upcoming /
-  draft / completed) and filter chips. A row opens the shift in a dialog.
-- 14-day planner (two calendar weeks from Monday, until ADC confirms the
-  fortnight anchor) with published and draft counts. Selecting a future day
-  opens a new 09:00–17:00 draft shift on that date; every value stays editable.
-- Needs attention inbox with inline actions: publish drafts, approve or refuse
-  leave, correct missing sign-outs, open timesheet reconciliation, open profiles
-  with expiring visas or work permits. Leave that overlaps published shifts is
-  flagged and cannot be approved inline until the roster is resolved (task 13).
+- Quick actions in the header open dialogs over the dashboard: Create shift, Add employee. Dialogs refresh the figures when closed.
+- Metric strip: today's shifts, working now, unpublished shifts, missing sign-outs, leave to review, timesheet reviews and document alerts. Alert figures are highlighted. Selecting a metric opens its inbox tab, or its list.
+- Today's shifts with attendance status (signed in / not signed in / upcoming / draft / completed) and filter chips. A row opens the shift in a dialog.
+- 14-day planner (two calendar weeks from Monday, until ADC confirms the fortnight anchor) with published and draft counts. Selecting a future day opens a new 09:00–17:00 draft shift on that date; every value stays editable.
+- Needs attention inbox with inline actions: publish drafts, approve or refuse leave, correct missing sign-outs, open timesheet reconciliation, open profiles with expiring visas or work permits. Leave that overlaps published shifts is flagged and cannot be approved inline until the roster is resolved (task 13).
 
 **Workers**: current or next shift banner with sign-in status, large links
 (shift calendar, work history, team messages, leave, profile), Request leave
