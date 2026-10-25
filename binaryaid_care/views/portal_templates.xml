@@ -54,7 +54,8 @@
         </xpath>
     </template>
 
-    <!-- No vendor branding on portal pages: footer promotion and browser tab title. -->
+    <!-- Builds on odoo_branding_remover (record sidebar, promotion text): drop the empty
+         promotion block and name the browser tab after ADC on portal pages. -->
     <template id="brand_promotion_adc" inherit_id="web.brand_promotion" priority="60">
         <xpath expr="//div[hasclass('o_brand_promotion')]" position="replace"/>
     </template>
@@ -62,11 +63,6 @@
         <xpath expr="//title" position="replace">
             <title t-esc="title or 'Australian Diversity Care'"/>
         </xpath>
-    </template>
-
-    <!-- No vendor branding inside portal record pages. -->
-    <template id="portal_record_sidebar_adc" inherit_id="portal.portal_record_sidebar" priority="60">
-        <xpath expr="//div[hasclass('o_portal_sidebar_content')]/div[hasclass('d-none')]" position="replace"/>
     </template>
 
     <!-- Client summary at the top of My account for participants and representatives. -->

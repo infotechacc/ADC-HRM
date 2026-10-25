@@ -8,7 +8,7 @@
                    'team announcements and care-specific shift validation. No CRM or sales pipeline is used.',
     'author': 'BinaryAid',
     'license': 'LGPL-3',
-    'depends': ['binaryaid_roster_planning', 'hr_holidays', 'portal'],
+    'depends': ['binaryaid_roster_planning', 'hr_holidays', 'portal', 'odoo_branding_remover'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
