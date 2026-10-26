@@ -171,9 +171,11 @@ class TestCareRoster(CareCase):
         shift = self.shift(days=3)
         shift.action_publish()
         leave_type = self.env['hr.leave.type'].create({'name': 'Care leave', 'requires_allocation': False, 'leave_validation_type': 'hr'})
+        # Leave around the shift day, so the overlap holds whatever time of day the test runs.
         day = shift.start.date()
         leave = self.env['hr.leave'].create({'holiday_status_id': leave_type.id, 'employee_id': self.alice.id,
-                                             'request_date_from': day, 'request_date_to': day})
+                                             'request_date_from': day - timedelta(days=1),
+                                             'request_date_to': day + timedelta(days=1)})
         self.assertEqual(leave.binaryaid_conflict_count, 1)
         with self.assertRaises(UserError):
             leave.with_user(self.admin).action_approve()
@@ -273,6 +275,18 @@ class TestCarePortal(HttpCase):
         for model in ('hr.employee', 'binaryaid.work.shift', 'hr.attendance'):
             with self.assertRaises(AccessError):
                 self.env[model].with_user(contact.user_id).search([])
+
+    def test_staff_see_support_requests_on_my_account(self):
+        new_test_user(self.env, login='care_portal_admin', password='care_portal_admin',
+                      groups='base.group_user,binaryaid_work_management.group_work_admin')
+        new_test_user(self.env, login='care_portal_worker', password='care_portal_worker',
+                      groups='base.group_user,binaryaid_work_management.group_work_user')
+        self.authenticate('care_portal_admin', 'care_portal_admin')
+        home = self.url_open('/my').text
+        self.assertIn('Review client support requests', home)
+        self.assertIn('/odoo/action-binaryaid_care.action_client_requests', home)
+        self.authenticate('care_portal_worker', 'care_portal_worker')
+        self.assertNotIn('Review client support requests', self.url_open('/my').text)
 
 
 class TestCareGaps(CareCase):

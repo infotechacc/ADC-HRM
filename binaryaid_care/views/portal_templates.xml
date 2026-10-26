@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Odoo's own /my page: the Support requests tile is always shown to authorised contacts. -->
+    <!-- Odoo's own /my page: the Support requests tile is always shown to authorised contacts and request staff. -->
     <template id="portal_my_home_care" inherit_id="portal.portal_my_home" priority="45">
         <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
             <t t-set="portal_client_category_enable" t-value="True"/>
@@ -13,6 +13,15 @@
                 <t t-set="text">Request support and follow the status of your requests</t>
                 <t t-set="placeholder_count" t-value="'care_request_count'"/>
                 <t t-set="config_card" t-value="care_is_contact"/>
+            </t>
+            <!-- Staff review the same requests in the HRMS. -->
+            <t t-if="care_is_staff" t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/web/static/img/folder.svg'"/>
+                <t t-set="title">Support requests</t>
+                <t t-set="url" t-value="'/odoo/action-binaryaid_care.action_client_requests'"/>
+                <t t-set="text">Review client support requests and turn them into shifts</t>
+                <t t-set="placeholder_count" t-value="'care_review_count'"/>
+                <t t-set="config_card" t-value="True"/>
             </t>
         </div>
     </template>

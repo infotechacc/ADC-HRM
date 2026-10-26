@@ -26,13 +26,23 @@ class CareClientPortal(CustomerPortal):
     def _prepare_portal_layout_values(self):
         values = super()._prepare_portal_layout_values()
         values['care_is_contact'] = bool(self._care_contacts())
+        values['care_is_staff'] = self._care_is_staff()
         return values
+
+    def _care_is_staff(self):
+        """Internal users who handle client requests in the HRMS."""
+        user = request.env.user
+        return not user._is_public() and not user.share and \
+            request.env['binaryaid.care.client.request'].has_access('read')
 
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
         contacts = self._care_contacts()
         if 'care_request_count' in counters:
             values['care_request_count'] = request.env['binaryaid.care.client.request'].search_count([]) if contacts else 0
+        if 'care_review_count' in counters:
+            values['care_review_count'] = request.env['binaryaid.care.client.request'].search_count(
+                [('state', 'in', ['submitted', 'in_review'])]) if self._care_is_staff() else 0
         if not counters and contacts:
             # First render of /my: the client summary shown above Odoo's own account tiles.
             values['care_home'] = self._care_summary(contacts)
