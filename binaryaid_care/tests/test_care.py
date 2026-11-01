@@ -1,9 +1,9 @@
 import base64
 from datetime import timedelta
 
-from odoo import fields, http
+from odoo import fields
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
+from odoo.tests import TransactionCase, new_test_user, tagged
 
 from odoo.addons.binaryaid_work_scheduling.models.dashboard import name_parts
 
@@ -22,11 +22,10 @@ class CareCase(TransactionCase):
         cls.alice = cls.env['hr.employee'].create({'name': 'Care Alice', 'user_id': cls.alice_user.id})
         cls.bob = cls.env['hr.employee'].create({'name': 'Care Bob', 'user_id': cls.bob_user.id})
         Client = cls.env['binaryaid.care.client'].with_user(cls.admin)
-        cls.client = Client.create({'name': 'Client One', 'reference': 'P-001', 'care_requirements': '<p>Private needs</p>',
-                                    'location_ids': [(0, 0, {'name': 'Home', 'latitude': -33.8688, 'longitude': 151.2093})]})
-        cls.other_client = Client.create({'name': 'Client Two', 'reference': 'P-002'})
+        cls.client = Client.create({'name': 'Client One', 'phone': '0400 000 001', 'service_location': '14 George St, Parramatta',
+                                    'latitude': -33.8688, 'longitude': 151.2093})
+        cls.other_client = Client.create({'name': 'Client Two'})
         cls.location = cls.client.location_ids
-        cls.location.action_verify_coordinates()
         # ADC chooses which worker documents are required; the tests require the screening check.
         cls.env.ref('binaryaid_care.category_worker_screening').required = True
         # Required worker documents are satisfied for Alice so publication is not flagged.
@@ -45,24 +44,44 @@ class CareCase(TransactionCase):
 
 
 class TestCareClients(CareCase):
-    def test_client_documents_reference_and_archive(self):
-        self.assertEqual(len(self.client.document_ids), 8)
-        with self.assertRaises(Exception), self.cr.savepoint():
-            self.env['binaryaid.care.client'].create({'name': 'Dup', 'reference': 'P-001'})
-        contact = self.env['binaryaid.care.client.contact'].create({
-            'client_id': self.client.id, 'name': 'Rep', 'email': 'rep@example.com', 'contact_type': 'representative'})
-        contact.with_user(self.admin).action_grant_portal()
-        self.assertTrue(contact.user_id.share and contact.user_id.active)
-        self.assertIn('invitation', self.client.message_ids[0].body.lower())
-        self.client.with_user(self.admin).write({'active': False})
-        self.assertFalse(contact.user_id.with_context(active_test=False).active)
-
-    def test_location_coordinates_and_verification(self):
-        self.assertTrue(self.location.coordinates_verified)
-        self.location.with_user(self.admin).latitude = -33.87
-        self.assertFalse(self.location.coordinates_verified)
+    def test_simple_client_form(self):
+        client = self.client.with_user(self.admin)
+        self.assertEqual((client.service_location, client.timezone, client.radius_m),
+                         ('14 George St, Parramatta', 'Australia/Sydney', 50))
+        self.assertEqual(len(client.location_ids), 1)
+        client.write({'service_location': '22 High St, Penrith', 'latitude': -33.75, 'radius_m': 80})
+        self.assertEqual(len(client.location_ids), 1, 'the form edits the one service location')
+        self.assertEqual((self.location.name, self.location.latitude, self.location.radius_m), ('22 High St, Penrith', -33.75, 80))
         with self.assertRaises(ValidationError):
-            self.location.radius_m = 0
+            client.radius_m = 0
+        client.contact_ids = [(0, 0, {'name': 'Helen', 'phone': '0411 000 000', 'email': 'helen@example.com'})]
+        self.assertEqual(client.contact_ids.name, 'Helen')
+
+    def test_care_plans(self):
+        Plan = self.env['binaryaid.care.plan'].with_user(self.admin)
+        morning, meals = Plan.create([{'name': 'Morning routine'}, {'name': 'Meal preparation'}])
+        self.client.with_user(self.admin).plan_ids = [(6, 0, (morning | meals).ids)]
+        self.assertEqual(self.client.plan_ids, morning | meals)
+        self.client.with_user(self.admin).plan_ids = [(0, 0, {'name': 'Community access'})]
+        self.assertEqual(len(self.client.plan_ids), 3)
+        shift = self.shift()
+        self.assertEqual(shift.client_plan_ids, self.client.plan_ids)
+
+    def test_client_documents(self):
+        Document = self.env['binaryaid.care.client.document'].with_user(self.admin)
+        files = Document.create([{'client_id': self.client.id, 'name': 'plan-%s.pdf' % n, 'file': base64.b64encode(PDF)}
+                                 for n in range(3)])
+        self.assertEqual(len(self.client.document_ids), 3)
+        preview, download = files[0].action_preview(), files[0].action_download()
+        self.assertIn('download=false', preview['url'])
+        self.assertEqual(preview['target'], 'new')
+        self.assertIn('download=true', download['url'])
+        reviewer = new_test_user(self.env, login='care_reviewer_docs', groups='binaryaid_care.group_care_reviewer')
+        self.assertEqual(Document.with_user(reviewer).search([('client_id', '=', self.client.id)]), files)
+        with self.assertRaises(AccessError):
+            Document.with_user(self.alice_user).search([])
+        files[0].unlink()
+        self.assertEqual(len(self.client.document_ids), 2)
 
     def test_worker_sees_only_rostered_clients(self):
         Client = self.env['binaryaid.care.client'].with_user(self.alice_user)
@@ -70,15 +89,17 @@ class TestCareClients(CareCase):
         self.shift().action_publish()
         self.assertEqual(Client.search([]), self.client)
         with self.assertRaises(AccessError):
-            Client.browse(self.client.id).care_requirements
+            Client.browse(self.client.id).phone
         with self.assertRaises(AccessError):
             Client.browse(self.other_client.id).name
         self.assertFalse(self.env['binaryaid.care.client'].with_user(self.bob_user).search([]))
+        with self.assertRaises(Exception), self.cr.savepoint():
+            self.env['binaryaid.care.client'].create([{'name': 'A', 'reference': 'P-1'}, {'name': 'B', 'reference': 'P-1'}])
 
 
 class TestCareDocuments(CareCase):
     def test_upload_validation_and_versions(self):
-        document = self.client.document_ids[0]
+        document = self.bob.binaryaid_document_ids[0]
         Version = self.env['binaryaid.care.document.version'].with_user(self.admin)
         for data, name in ((PDF, 'file.exe'), (b'not a pdf', 'file.pdf'), (b'MZ\x90\x00', 'file.doc')):
             with self.assertRaises(ValidationError):
@@ -103,14 +124,14 @@ class TestCareDocuments(CareCase):
             version.with_user(self.bob_user).action_approve()
         with self.assertRaises(AccessError):
             self.env['binaryaid.care.document.version'].with_user(self.bob_user)._create_version(
-                self.client.document_ids[0], PDF, 'x.pdf')
+                self.alice.binaryaid_document_ids[0], PDF, 'x.pdf')
         version.with_user(self.admin).action_approve()
         self.assertEqual(document.current_version_id, version)
         own = self.env['binaryaid.care.document'].with_user(self.bob_user).search([])
         self.assertTrue(own and all(d.employee_id == self.bob for d in own))
 
     def test_expiry_states(self):
-        document = self.client.document_ids[0]
+        document = self.bob.binaryaid_document_ids[0]
         self.assertEqual(document.expiry_state, 'missing')
         self.env['binaryaid.care.document.version'].with_user(self.admin)._create_version(
             document, PDF, 'a.pdf', expiry_date=fields.Date.today() - timedelta(days=1))
@@ -122,7 +143,7 @@ class TestCareRoster(CareCase):
     def test_publish_rules_and_warnings(self):
         shift = self.shift()
         self.assertEqual(shift.timezone, self.location.timezone)
-        self.assertIn('Home', shift.location)
+        self.assertEqual(shift.location, '14 George St, Parramatta')
         shift.action_publish()
         # Bob lacks required documents: publication needs a recorded manager review.
         flagged = self.shift(employee=self.bob, days=3)
@@ -130,8 +151,8 @@ class TestCareRoster(CareCase):
             flagged.action_publish()
         flagged.review_note = 'Documents sighted, upload pending'
         flagged.action_publish()
-        unverified = self.client.location_ids.create({'client_id': self.client.id, 'name': 'Centre'})
-        draft = self.shift(days=4, service_location_id=unverified.id, review_note=False)
+        no_coordinates = self.client.location_ids.create({'client_id': self.client.id, 'name': 'Centre'})
+        draft = self.shift(days=4, service_location_id=no_coordinates.id, review_note=False)
         self.assertTrue(any('coordinates' in w for w in draft._review_warnings()))
         self.other_client.status = 'on_hold'
         with self.assertRaises(ValidationError):
@@ -146,26 +167,6 @@ class TestCareRoster(CareCase):
         with self.assertRaises(UserError):
             shift.write({'name': 'Second editor', 'binaryaid_revision_token': token})
         self.assertEqual(shift.name, 'First editor')
-
-    def test_request_to_shift_flow(self):
-        request = self.env['binaryaid.care.client.request'].create({
-            'client_id': self.client.id, 'support_needs': 'Help with shopping', 'location_id': self.location.id,
-            'preferred_date_from': fields.Date.today() + timedelta(days=3), 'preferred_start_time': 10, 'preferred_end_time': 13})
-        self.assertTrue(request.name.startswith('REQ/'))
-        Request = request.with_user(self.admin)
-        with self.assertRaises(UserError):
-            Request.action_create_shift()
-        with self.assertRaises(UserError):
-            Request.action_decline()
-        Request.action_approve()
-        context = Request.action_create_shift()['context']
-        shift = self.env['binaryaid.work.shift'].with_user(self.admin).with_context(**context).create({'employee_id': self.alice.id})
-        self.assertEqual((shift.client_id, shift.client_request_id, shift.service_location_id), (self.client, request, self.location))
-        self.assertAlmostEqual((shift.end - shift.start).total_seconds(), 3 * 3600)
-        shift.action_publish()
-        self.assertEqual(request.state, 'scheduled')
-        with self.assertRaises(AccessError):
-            request.with_user(self.alice_user).action_approve()
 
     def test_leave_requires_staffing_resolution(self):
         shift = self.shift(days=3)
@@ -212,81 +213,14 @@ class TestCareMessagesAndProfile(CareCase):
         self.bob.with_user(self.admin).write({'active': False})
         self.assertFalse(self.bob_user.active)
 
-    def test_dashboard_requests_and_quick_actions(self):
-        request = self.env['binaryaid.care.client.request'].create({
-            'client_id': self.client.id, 'support_needs': 'Confidential detail', 'preferred_date_from': fields.Date.today()})
+    def test_dashboard_quick_actions(self):
         dashboard = self.env['binaryaid.hrms.dashboard'].with_user(self.admin)
         data = dashboard.get_overview()
-        tab = next(t for t in data['attention'] if t['key'] == 'client_requests')
-        item = next(i for i in tab['items'] if i['id'] == request.id)
-        self.assertNotIn('Confidential', str(item))
-        self.assertIn('add_client', {a['key'] for a in data['quick_actions']})
+        keys = {a['key'] for a in data['quick_actions']}
+        self.assertIn('add_client', keys)
+        self.assertFalse({key for key in keys if 'request' in key}, 'no client request review on the dashboard')
+        self.assertNotIn('account_url', data)
         self.assertEqual(dashboard.quick_action('add_client')['res_model'], 'binaryaid.care.client')
-        dashboard.item_action('request', request.id, 'approve')
-        self.assertEqual(request.state, 'approved')
-        self.assertEqual(dashboard.item_action('request', request.id, 'create_shift')['target'], 'new')
-        with self.assertRaises(AccessError):
-            self.env['binaryaid.hrms.dashboard'].with_user(self.alice_user).item_action('request', request.id, 'approve')
-
-
-@tagged('post_install', '-at_install')
-class TestCarePortal(HttpCase):
-    def test_portal_request_submission_and_isolation(self):
-        client = self.env['binaryaid.care.client'].create({'name': 'Portal Client', 'reference': 'P-PORTAL'})
-        other = self.env['binaryaid.care.client'].create({'name': 'Hidden Client', 'reference': 'P-HIDDEN'})
-        hidden = self.env['binaryaid.care.client.request'].create({
-            'client_id': other.id, 'support_needs': 'Hidden', 'preferred_date_from': fields.Date.today()})
-        contact = self.env['binaryaid.care.client.contact'].create({
-            'client_id': client.id, 'name': 'Portal Rep', 'email': 'portal.rep@example.com'})
-        contact.action_grant_portal()
-        contact.user_id.password = 'portal-rep-pass'
-        self.authenticate('portal.rep@example.com', 'portal-rep-pass')
-        page = self.url_open('/my/support-requests/new')
-        self.assertEqual(page.status_code, 200)
-        response = self.url_open('/my/support-requests/new', data={
-            'csrf_token': http.Request.csrf_token(self), 'client_id': other.id, 'support_needs': 'Should fail',
-            'preferred_date_from': str(fields.Date.today() + timedelta(days=1))})
-        self.assertIn('Choose the client', response.text)
-        self.url_open('/my/support-requests/new', data={
-            'csrf_token': http.Request.csrf_token(self), 'client_id': client.id, 'support_needs': 'Weekly shopping support',
-            'preferred_date_from': str(fields.Date.today() + timedelta(days=2)), 'preferred_start_time': '10:00',
-            'preferred_end_time': '12:30'})
-        created = self.env['binaryaid.care.client.request'].search([('client_id', '=', client.id)])
-        self.assertEqual(len(created), 1)
-        self.assertEqual(created.preferred_end_time, 12.5)
-        listing = self.url_open('/my/support-requests').text
-        self.assertIn(created.name, listing)
-        self.assertNotIn(hidden.name, listing)
-        self.assertNotIn(hidden.name, self.url_open('/my/support-requests/%s' % hidden.id).text)
-        # My account (/my) keeps Odoo's account features and adds the client summary, ADC-branded.
-        home = self.url_open('/my')
-        self.assertTrue(home.url.endswith('/my'))
-        for text in ('Request support', 'Portal Client', created.name, 'Support requests', 'Connection &amp; Security', 'adc_brand'):
-            self.assertIn(text, home.text)
-        self.assertNotIn('Powered by', home.text)
-        self.assertTrue(self.url_open('/my/care/account').url.endswith('/my'))
-        security = self.url_open('/my/security')
-        self.assertEqual(security.status_code, 200)
-        self.assertIn('adc_brand', security.text)
-        detail = self.url_open('/my/support-requests/%s' % created.id).text
-        self.assertIn('adc_timeline', detail)
-        self.assertIn('adc_brand', detail)
-        # Employee HR files, shifts and attendance are not reachable for client logins.
-        for model in ('hr.employee', 'binaryaid.work.shift', 'hr.attendance'):
-            with self.assertRaises(AccessError):
-                self.env[model].with_user(contact.user_id).search([])
-
-    def test_staff_see_support_requests_on_my_account(self):
-        new_test_user(self.env, login='care_portal_admin', password='care_portal_admin',
-                      groups='base.group_user,binaryaid_work_management.group_work_admin')
-        new_test_user(self.env, login='care_portal_worker', password='care_portal_worker',
-                      groups='base.group_user,binaryaid_work_management.group_work_user')
-        self.authenticate('care_portal_admin', 'care_portal_admin')
-        home = self.url_open('/my').text
-        self.assertIn('Review client support requests', home)
-        self.assertIn('/odoo/action-binaryaid_care.action_client_requests', home)
-        self.authenticate('care_portal_worker', 'care_portal_worker')
-        self.assertNotIn('Review client support requests', self.url_open('/my').text)
 
 
 class TestCareGaps(CareCase):
@@ -297,9 +231,9 @@ class TestCareGaps(CareCase):
         self.assertTrue(shift.is_unfilled)
         dashboard = self.env['binaryaid.hrms.dashboard'].with_user(self.admin)
         data = dashboard.get_overview()
-        tab = next(t for t in data['attention'] if t['key'] == 'unfilled')
-        self.assertIn(shift.id, [i['id'] for i in tab['items']])
-        self.assertNotIn(shift.id, [i['id'] for t in data['attention'] if t['key'] == 'unpublished' for i in t['items']])
+        cards = {card['key']: card['value'] for card in data['cards']}
+        self.assertEqual(cards['unfilled'], 1)
+        self.assertNotIn('attention', data)
         self.assertEqual(name_parts('[DEMO] Mei Lin Zhang'), ['Mei', 'Lin', 'Zhang'])
         chips = [c for day in data['coverage']['days'] for c in day['items'] if c['id'] == shift.id]
         self.assertTrue(chips and chips[0]['unfilled'] and chips[0]['client'] == self.client.name)

@@ -8,25 +8,19 @@
             <xpath expr="//field[@name='employee_id']" position="before">
                 <field name="client_id" readonly="state != 'draft'" options="{'no_create': True}"/>
                 <field name="service_location_id" readonly="state != 'draft'" options="{'no_create': True}" context="{'short_location': True}" invisible="not client_id"/>
-                <field name="client_request_id" readonly="state != 'draft'" options="{'no_create': True}" invisible="not client_id" groups="binaryaid_work_management.group_work_admin"/>
             </xpath>
             <xpath expr="//field[@name='location']" position="attributes">
                 <attribute name="readonly">state != 'draft' or service_location_id</attribute>
             </xpath>
             <xpath expr="//field[@name='location']" position="after">
-                <field name="location_verified" invisible="not service_location_id" string="Location verified"/>
                 <field name="binaryaid_revision" invisible="1"/>
             </xpath>
             <xpath expr="//field[@name='instructions']" position="attributes">
                 <attribute name="placeholder">Shift plan: the support to deliver on this shift</attribute>
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Client requirements" name="client_requirements" invisible="not client_id" groups="binaryaid_work_management.group_work_admin">
-                    <field name="client_requirements" readonly="1"/>
-                    <separator string="Approved requests"/>
-                    <field name="approved_request_ids" readonly="1">
-                        <list><field name="name"/><field name="preferred_date_from"/><field name="preferred_start_time" widget="float_time"/><field name="preferred_end_time" widget="float_time"/><field name="location_id"/><field name="state"/></list>
-                    </field>
+                <page string="Care plans" name="client_plans" invisible="not client_id" groups="binaryaid_work_management.group_work_admin">
+                    <field name="client_plan_ids" readonly="1"><list><field name="name"/></list></field>
                 </page>
             </xpath>
         </field>
@@ -71,8 +65,6 @@
                             <field name="client_id" options="{'no_create': True}" readonly="state != 'draft'"/>
                             <field name="service_location_id" string="Location" options="{'no_create': True}" context="{'short_location': True}" invisible="not client_id" readonly="state != 'draft'"/>
                             <field name="location" invisible="client_id" readonly="state != 'draft'"/>
-                            <field name="location_verified" invisible="not service_location_id"/>
-                            <field name="client_request_id" string="From request" options="{'no_create': True}" invisible="not client_id" readonly="state != 'draft'"/>
                         </group>
                         <group string="When">
                             <field name="start" readonly="state != 'draft'"/>
@@ -87,8 +79,8 @@
                             <field name="employee_id" readonly="state != 'draft'" options="{'no_create': True}" placeholder="Leave empty for an unfilled shift"/>
                             <field name="name" string="Shift title" readonly="state != 'draft'"/>
                         </group>
-                        <group string="Approved care requirements" invisible="not client_id">
-                            <field name="client_requirements" nolabel="1" colspan="2" readonly="1"/>
+                        <group string="Care plans" invisible="not client_id">
+                            <field name="client_plan_ids" widget="many2many_tags" nolabel="1" colspan="2" readonly="1"/>
                         </group>
                     </group>
                     <label for="instructions" string="Shift plan"/>

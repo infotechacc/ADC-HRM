@@ -84,7 +84,7 @@ class DocumentCategory(models.Model):
     _order = 'applies_to, sequence, id'
 
     name = fields.Char(required=True, translate=True)
-    applies_to = fields.Selection([('client', 'Client'), ('employee', 'Worker')], required=True, default='client')
+    applies_to = fields.Selection([('employee', 'Worker')], required=True, default='employee')
     sequence = fields.Integer(default=10)
     active = fields.Boolean(default=True)
     description = fields.Text()
@@ -97,11 +97,8 @@ class DocumentCategory(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         categories = super().create(vals_list)
-        # A new category immediately appears as missing on every existing client or worker.
-        if categories.filtered(lambda c: c.applies_to == 'client'):
-            self.env['binaryaid.care.client'].sudo().search([]).action_prepare_documents()
-        if categories.filtered(lambda c: c.applies_to == 'employee'):
-            self.env['hr.employee'].sudo().search([]).action_binaryaid_prepare_documents()
+        # A new category immediately appears as missing on every existing worker.
+        self.env['hr.employee'].sudo().search([]).action_binaryaid_prepare_documents()
         return categories
 
 
@@ -115,8 +112,7 @@ class CareDocument(models.Model):
     category_sequence = fields.Integer(related='category_id.sequence', store=True)
     applies_to = fields.Selection(related='category_id.applies_to', store=True)
     name = fields.Char(compute='_compute_name', store=True, readonly=False)
-    client_id = fields.Many2one('binaryaid.care.client', ondelete='restrict', index=True)
-    employee_id = fields.Many2one('hr.employee', ondelete='restrict', index=True)
+    employee_id = fields.Many2one('hr.employee', required=True, ondelete='restrict', index=True)
     company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company, index=True)
     active = fields.Boolean(default=True)
     version_ids = fields.One2many('binaryaid.care.document.version', 'document_id', string='Versions')
@@ -131,7 +127,7 @@ class CareDocument(models.Model):
     retention_due = fields.Boolean(readonly=True, copy=False)
     access_log_ids = fields.One2many('binaryaid.care.document.access', 'document_id', string='Access Log')
 
-    _owner_unique = models.UniqueIndex('(category_id, client_id, employee_id) WHERE active')
+    _owner_unique = models.UniqueIndex('(category_id, employee_id) WHERE active')
 
     @api.depends('category_id')
     def _compute_name(self):
@@ -184,15 +180,6 @@ class CareDocument(models.Model):
             result = ['|'] + result + domains[state] if result else domains[state]
         return result or [('id', '=', 0)]
 
-    @api.constrains('client_id', 'employee_id', 'category_id')
-    def _check_owner(self):
-        for document in self:
-            if bool(document.client_id) == bool(document.employee_id):
-                raise ValidationError(_('A document belongs to exactly one client or one worker.'))
-            if (document.category_id.applies_to == 'client') != bool(document.client_id):
-                raise ValidationError(_('Use a %s document category for this record.',
-                                        _('client') if document.client_id else _('worker')))
-
     def action_upload(self):
         self.ensure_one()
         self.check_access('read')
@@ -208,11 +195,10 @@ class CareDocument(models.Model):
 
     @api.model
     def _cron_retention_review(self):
-        """Flag documents of archived clients/workers past the retention period; nothing is deleted."""
+        """Flag documents of archived workers past the retention period; nothing is deleted."""
         cutoff = fields.Datetime.now() - relativedelta(years=int(get_param(self.env, 'retention_years')))
-        documents = self.with_context(active_test=False).search([('retention_due', '=', False), '|',
-            '&', ('client_id.active', '=', False), ('client_id.write_date', '<', cutoff),
-            '&', ('employee_id.active', '=', False), ('employee_id.write_date', '<', cutoff)])
+        documents = self.with_context(active_test=False).search([
+            ('retention_due', '=', False), ('employee_id.active', '=', False), ('employee_id.write_date', '<', cutoff)])
         documents.write({'retention_due': True})
         self.env['binaryaid.care.document.access'].search([('create_date', '<', cutoff)]).unlink()
 
@@ -241,17 +227,14 @@ class DocumentVersion(models.Model):
     review_note = fields.Text(readonly=True)
 
     def _is_document_manager(self, document):
-        user = self.env.user
-        if document.client_id:
-            return user.has_group('binaryaid_work_management.group_work_admin')
-        return user.has_group('hr.group_hr_user')
+        return self.env.user.has_group('hr.group_hr_user')
 
     @api.model
     def _create_version(self, document, data, filename, expiry_date=False, issue_date=False, note=False):
         """The only way to add file content: validates, stores the attachment and appends a version."""
         document.check_access('read')
         manager = self._is_document_manager(document)
-        if not manager and not (document.employee_id and document.employee_id.user_id == self.env.user):
+        if not manager and document.employee_id.user_id != self.env.user:
             raise AccessError(_('You cannot upload documents for this record.'))
         extension = validate_upload(self.env, data, filename)
         if document.category_id.requires_expiry and not expiry_date:

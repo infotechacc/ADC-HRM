@@ -37,6 +37,6 @@ Care timesheets (daily), document retention review (weekly), roster generation
 | Area | Owner |
 | --- | --- |
 | Hosting, backups, upgrades | BinaryAid |
-| User accounts, roles, client portal access | ADC administrator |
+| User accounts and roles | ADC administrator |
 | Document categories, note template, incident categories, settings | ADC operations lead |
 | Bugs and change requests | BinaryAid via ADC's nominated contact |

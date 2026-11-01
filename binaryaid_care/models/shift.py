@@ -15,18 +15,12 @@ class WorkShift(models.Model):
     service_location_id = fields.Many2one('binaryaid.care.service.location', string='Service location',
                                           ondelete='restrict', tracking=True,
                                           domain="[('client_id', '=', client_id)]")
-    client_request_id = fields.Many2one('binaryaid.care.client.request', string='Client request', ondelete='set null',
-                                        tracking=True, domain="[('client_id', '=', client_id), ('state', 'in', ['approved', 'scheduled'])]")
     location = fields.Char(compute='_compute_location', store=True, readonly=False, tracking=True)
     timezone = fields.Selection(compute='_compute_timezone', store=True, readonly=False, precompute=True)
     location_latitude = fields.Float(related='service_location_id.latitude', digits=(10, 7))
     location_longitude = fields.Float(related='service_location_id.longitude', digits=(10, 7))
-    location_verified = fields.Boolean(related='service_location_id.coordinates_verified')
-    client_requirements = fields.Html(related='client_id.care_requirements', string='Approved care requirements',
-                                      groups='binaryaid_work_management.group_work_admin,binaryaid_care.group_care_reviewer')
-    approved_request_ids = fields.Many2many('binaryaid.care.client.request', compute='_compute_approved_requests',
-                                            string='Approved client requests',
-                                            groups='binaryaid_work_management.group_work_admin')
+    client_plan_ids = fields.Many2many(related='client_id.plan_ids', string='Care plans',
+                                       groups='binaryaid_work_management.group_work_admin,binaryaid_care.group_care_reviewer')
     binaryaid_revision = fields.Integer(readonly=True, copy=False, default=0)
     binaryaid_revision_token = fields.Char(compute='_compute_revision_token', inverse='_inverse_revision_token')
 
@@ -59,8 +53,7 @@ class WorkShift(models.Model):
         for shift in self:
             # Published shifts keep the location text they were published with.
             if shift.service_location_id and shift.state == 'draft':
-                address = shift.service_location_id.address_text()
-                shift.location = '%s%s' % (shift.service_location_id.name, ' (%s)' % address if address else '')
+                shift.location = shift.service_location_id.name
             else:
                 shift.location = shift.location
 
@@ -71,13 +64,6 @@ class WorkShift(models.Model):
                 shift.timezone = shift.service_location_id.timezone
             elif not shift.timezone:
                 shift.timezone = 'Australia/Sydney'
-
-    @api.depends('client_id')
-    def _compute_approved_requests(self):
-        for shift in self:
-            shift.approved_request_ids = self.env['binaryaid.care.client.request'].search([
-                ('client_id', '=', shift.client_id.id), ('state', 'in', ['approved', 'scheduled'])], limit=20) \
-                if shift.client_id else False
 
     def _compute_revision_token(self):
         for shift in self:
@@ -93,13 +79,11 @@ class WorkShift(models.Model):
         if self.client_id and not self.name:
             self.name = _('%s support', self.client_id.name)
 
-    @api.constrains('client_id', 'service_location_id', 'client_request_id')
+    @api.constrains('client_id', 'service_location_id')
     def _check_client_links(self):
         for shift in self:
             if shift.service_location_id and shift.service_location_id.client_id != shift.client_id:
                 raise ValidationError(_('The service location must belong to the selected client.'))
-            if shift.client_request_id and shift.client_request_id.client_id != shift.client_id:
-                raise ValidationError(_('The client request must belong to the selected client.'))
 
     def write(self, vals):
         token = vals.pop('binaryaid_revision_token', None)
@@ -152,9 +136,7 @@ class WorkShift(models.Model):
         if self.client_id and not self.service_location_id:
             warnings.append(_('No service location is selected for this client shift.'))
         elif self.service_location_id and not self.service_location_id.has_coordinates():
-            warnings.append(_('The service location has no coordinates; sign in cannot be location verified.'))
-        elif self.service_location_id and not self.service_location_id.coordinates_verified:
-            warnings.append(_('The service location coordinates are not verified.'))
+            warnings.append(_('The service location has no coordinates; check in cannot be location verified.'))
         for problem in self._missing_worker_documents():
             warnings.append(_('Worker document: %s.', problem))
         return warnings
@@ -166,9 +148,3 @@ class WorkShift(models.Model):
         for shift in self:
             if shift.client_id and (not shift.client_id.active or shift.client_id.status != 'active'):
                 raise ValidationError(_('%s is not an active client.', shift.client_id.name))
-
-    def action_publish(self):
-        result = super().action_publish()
-        self.client_request_id.filtered(lambda r: r.state == 'approved').sudo().write({'state': 'scheduled'})
-        self.client_request_id.filtered(lambda r: r.state == 'scheduled')._notify_requester()
-        return result

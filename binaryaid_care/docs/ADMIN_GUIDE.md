@@ -3,9 +3,9 @@
 ## Your daily dashboard
 Open **HRMS Dashboard** (your home page after login).
 
-- **Header buttons**: Create shift, Add client, Add employee, Review requests.
+- **Header buttons**: Create shift, Add client, Add employee.
   They open pop-ups; the dashboard refreshes when you close them.
-- **Figures bar**: today's shifts, working now, unfilled shifts, client requests,
+- **Figures bar**: today's shifts, working now, unfilled shifts,
   missing sign-outs, clock exceptions, leave to review, timesheet reviews. A figure
   turns red or amber when it needs action; click it to open the matching list.
 - **Today**: every shift today with time, worker, client, location and live status
@@ -14,31 +14,33 @@ Open **HRMS Dashboard** (your home page after login).
 - **Next 14 days**: a calendar of the actual shifts (time, worker, client).
   Published shifts have a solid bar, drafts a dashed bar, unfilled shifts are red.
   Hover a day and click **+** to create a shift on it.
-- **Action items**: each category with work waiting (Unfilled, Requests, Clock,
-  Drafts, Leave, Documents, Sign-outs, Timesheets, Notes, Incidents). Click a
-  category to expand it and act on each item without leaving the page.
 
-**Shift pop-up**: choose the client (its location and approved care requirements
+**Shift pop-up**: choose the client (its service location and care plans
 appear), the time and, if known, the worker. Leave the worker empty to save an
 **unfilled** shift. *Save draft* keeps it unpublished; *Publish* checks it and
 notifies the worker. If publishing is blocked, the draft is kept and the reason shown.
 
 ## Clients
-Care Operations ▸ Clients. Keep the participant ID, status, authorised contacts,
-care requirements and service locations. Each location needs coordinates and must
-be **verified** before sign in can be location checked. Archive a client to stop
-new shifts; history is kept and portal logins are disabled.
+Care Operations ▸ Clients. One form holds the client name, phone and email,
+alternative contacts (name, phone, email) and the service location with its
+latitude, longitude, timezone and clock radius. Workers can only check in and out
+within the clock radius of these coordinates. Archive a client (⚙ ▸ Archive) to
+stop new shifts; history is kept.
 
-**Portal access**: on *Authorised contacts*, click *Grant portal* for the
-participant or an authorised representative. They can submit support needs and
-see their own request status only.
+- **Care Plans tab**: *Add a line* lists every plan from Care Operations ▸ Plans;
+  tick one or more to assign them, or click *New* to create a plan on the spot.
+- **Documents tab**: *Add a line* and choose a file; upload as many as needed.
+  Each file has *Preview* and *Download* buttons.
+
+## Plans
+Care Operations ▸ Plans. Enter a plan name to create it; all plans are listed.
 
 ## Shifts
 Create from the dashboard (button or planner day). Choose the client first: the
-service location and approved requests appear. *Save* keeps a draft; *Publish*
+service location and care plans appear. *Save* keeps a draft; *Publish*
 notifies the worker. Publishing is blocked for overlapping shifts, approved leave,
 inactive employees or clients, and asks for a manager note when documents are
-missing/expired or a location is not verified. Published changes: *Revise* or
+missing/expired or a location has no coordinates. Published changes: *Revise* or
 *Cancel* with a reason, or *Replace / Swap*.
 
 ## Timesheets (every fortnight)
@@ -47,6 +49,6 @@ check each row's issues, *Adjust* hours with a reason when needed, then
 *Approve* and *Lock*. Incomplete and unresolved rows are excluded from approved
 hours. *Export CSV* produces approved hours for payroll (it does not run payroll).
 
-## Team messages
-Care Operations ▸ Team Messages. Choose employees, departments or everyone.
-Keep care details out of messages; recipients only get a generic notification.
+## Forms
+Every form has labelled **Save** and **Cancel** buttons at the top while you have
+unsaved changes.

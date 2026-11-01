@@ -4,7 +4,7 @@
         <field name="name">binaryaid.care.document.category.list</field><field name="model">binaryaid.care.document.category</field>
         <field name="arch" type="xml">
             <list editable="bottom">
-                <field name="sequence" widget="handle"/><field name="name"/><field name="applies_to"/>
+                <field name="sequence" widget="handle"/><field name="name"/>
                 <field name="requires_expiry"/><field name="expiry_alert_days"/><field name="required"/><field name="active" widget="boolean_toggle"/>
             </list>
         </field>
@@ -12,7 +12,7 @@
     <record id="action_document_category" model="ir.actions.act_window">
         <field name="name">Document Categories</field><field name="res_model">binaryaid.care.document.category</field>
         <field name="view_mode">list</field><field name="context">{'active_test': False}</field>
-        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Define the client and worker document categories supplied by ADC.</p></field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Define the worker document categories supplied by ADC.</p></field>
     </record>
 
     <record id="view_document_version_list" model="ir.ui.view">
@@ -34,7 +34,7 @@
         <field name="name">binaryaid.care.document.list</field><field name="model">binaryaid.care.document</field>
         <field name="arch" type="xml">
             <list create="false" decoration-danger="expiry_state == 'expired'" decoration-warning="expiry_state == 'expiring'" decoration-muted="expiry_state == 'missing'">
-                <field name="category_id"/><field name="client_id" optional="show"/><field name="employee_id" optional="show"/>
+                <field name="category_id"/><field name="employee_id"/>
                 <field name="version_count" string="Versions"/><field name="pending_version_count" string="Awaiting approval" optional="show"/>
                 <field name="expiry_date"/><field name="expiry_state" widget="badge" decoration-success="expiry_state == 'valid'" decoration-warning="expiry_state == 'expiring'" decoration-danger="expiry_state == 'expired'"/>
                 <button name="action_upload" type="object" string="Upload" icon="fa-upload"/>
@@ -55,7 +55,7 @@
                 <sheet>
                     <div class="oe_title"><h1><field name="name" placeholder="Document name"/></h1></div>
                     <group>
-                        <group><field name="category_id" options="{'no_create': True}" readonly="id"/><field name="client_id" invisible="not client_id" readonly="1"/><field name="employee_id" invisible="not employee_id" readonly="1"/></group>
+                        <group><field name="category_id" options="{'no_create': True}" readonly="id"/><field name="employee_id" readonly="1"/></group>
                         <group><field name="current_version_id" readonly="1"/><field name="expiry_date"/><field name="alert_date" string="Alert from"/><field name="company_id" groups="base.group_multi_company"/></group>
                     </group>
                     <div class="alert alert-warning" role="alert" invisible="not retention_due">This record is past the configured retention period. Review it before any disposal.</div>
@@ -79,13 +79,11 @@
         <field name="name">binaryaid.care.document.search</field><field name="model">binaryaid.care.document</field>
         <field name="arch" type="xml">
             <search>
-                <field name="category_id"/><field name="client_id"/><field name="employee_id"/>
+                <field name="category_id"/><field name="employee_id"/>
                 <filter name="exceptions" string="Missing, expiring or expired" domain="[('expiry_state', 'in', ['missing', 'expiring', 'expired'])]"/>
                 <filter name="expired" string="Expired" domain="[('expiry_state', '=', 'expired')]"/>
                 <filter name="pending" string="Awaiting approval" domain="[('pending_version_count', '>', 0)]"/>
                 <separator/>
-                <filter name="clients" string="Client documents" domain="[('client_id', '!=', False)]"/>
-                <filter name="workers" string="Worker documents" domain="[('employee_id', '!=', False)]"/>
                 <filter name="retention" string="Retention review due" domain="[('retention_due', '=', True)]"/>
                 <group><filter name="group_category" string="Category" context="{'group_by': 'category_id'}"/></group>
             </search>
