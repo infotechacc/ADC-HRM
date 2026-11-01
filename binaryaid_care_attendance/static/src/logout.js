@@ -6,7 +6,7 @@ import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_d
 const userMenu = registry.category("user_menuitems");
 const nativeLogout = userMenu.get("log_out");
 
-/** Warn that logging out does not end an active shift (the worker must still Clock Out). */
+/** Warn that logging out does not end an active shift (the worker must still Check Out). */
 userMenu.add("log_out", (env) => {
     const item = nativeLogout(env);
     const proceed = item.callback;
@@ -24,7 +24,7 @@ userMenu.add("log_out", (env) => {
             }
             env.services.dialog.add(ConfirmationDialog, {
                 title: _t("You are still signed in to a shift"),
-                body: _t("Logging out does not end your shift. Clock Out from your dashboard when you finish, or your coordinator will see a missing sign out."),
+                body: _t("Logging out does not end your shift. Check Out from your dashboard when you finish, or your coordinator will see a missing sign out."),
                 confirmLabel: _t("Log out anyway"),
                 cancelLabel: _t("Stay"),
                 confirm: () => proceed(),

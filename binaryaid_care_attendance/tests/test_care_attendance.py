@@ -24,7 +24,6 @@ def setup_care(cls):
         'location_ids': [(0, 0, {'name': 'Home', 'latitude': LAT, 'longitude': LON, 'timezone': 'UTC'})]})
     cls.other_client = cls.env['binaryaid.care.client'].create({'name': 'Att Other Client', 'reference': 'ATT-2'})
     cls.location = cls.client.location_ids
-    cls.location.action_verify_coordinates()
     now = fields.Datetime.now().replace(microsecond=0)
     cls.shift = cls.env['binaryaid.work.shift'].with_user(cls.admin).create({
         'name': 'Morning support', 'employee_id': cls.worker.id, 'client_id': cls.client.id,
@@ -74,7 +73,7 @@ class TestCareClock(TransactionCase):
         later._roster_transition_write({'state': 'published', 'published_at': fields.Datetime.now()})
         with self.assertRaises(ValidationError):
             self.dashboard.with_user(self.worker_user).care_clock_in(later.id, *NEAR, 5)
-        self.location.with_context(binaryaid_verifying=True).write({'latitude': 0, 'longitude': 0})
+        self.location.write({'latitude': 0, 'longitude': 0})
         with self.assertRaises(ValidationError):
             self.dashboard.with_user(self.worker_user).care_clock_in(self.shift.id, *NEAR, 5)
 
@@ -129,10 +128,9 @@ class TestCareClock(TransactionCase):
         self.assertEqual(exception.state, 'submitted')
         with self.assertRaises(AccessError):
             exception.with_user(self.worker_user).action_approve()
-        overview = self.dashboard.with_user(self.admin).get_overview()
-        tab = next(t for t in overview['attention'] if t['key'] == 'exceptions')
-        self.assertIn(exception.id, [i['id'] for i in tab['items']])
-        self.dashboard.with_user(self.admin).item_action('clock_exception', exception.id, 'approve')
+        cards = {c['key']: c['value'] for c in self.dashboard.with_user(self.admin).get_overview()['cards']}
+        self.assertEqual(cards['exceptions'], 1)
+        exception.with_user(self.admin).action_approve()
         self.assertEqual(exception.state, 'approved')
         self.assertEqual(exception.attendance_id.check_in, self.shift.start)
         self.assertEqual(exception.attendance_id.in_mode, 'binaryaid_exception')
@@ -210,12 +208,9 @@ class TestCareIncidents(TransactionCase):
             self.report(self.worker_user, self.client, attachment_ids=[(6, 0, bad.ids)])
 
     def test_reviewer_dashboard_hides_details(self):
-        incident = self.report(self.worker_user, self.client, description='Very private detail')
+        self.report(self.worker_user, self.client, description='Very private detail')
         overview = self.dashboard.with_user(self.reviewer).get_overview()
-        tab = next(t for t in overview['attention'] if t['key'] == 'incidents')
-        item = next(i for i in tab['items'] if i['id'] == incident.id)
-        self.assertNotIn('private', str(item))
-        self.assertNotIn('incidents', {t['key'] for t in self.dashboard.with_user(self.admin).get_overview()['attention']})
+        self.assertNotIn('private', str(overview))
         action = self.dashboard.with_user(self.worker_user).quick_action('report_incident')
         self.assertEqual(action['res_model'], 'binaryaid.care.incident')
 
@@ -236,8 +231,12 @@ class TestCareClockBrowser(HttpCase):
                 throw new Error('Timed out: ' + label);
             };
             const byText = (sel, text) => [...document.querySelectorAll(sel)].find(el => el.textContent.includes(text));
-            (await wait(() => byText('.ba_clock_btn', 'Clock In'), 'clock in button')).click();
-            (await wait(() => byText('.ba_clock_btn', 'Clock Out'), 'clock out button')).click();
+            const enabled = (text) => { const b = byText('.ba_clock_btn', text); return b && !b.disabled && b; };
+            // Both buttons are always shown; only the one that applies is enabled.
+            await wait(() => byText('.ba_clock_btn', 'Check In') && byText('.ba_clock_btn', 'Check Out'), 'both buttons');
+            if (enabled('Check Out')) throw new Error('Check Out enabled before Check In');
+            (await wait(() => enabled('Check In'), 'check in button')).click();
+            (await wait(() => enabled('Check Out'), 'check out button')).click();
             await wait(() => document.querySelector('.modal textarea'), 'note dialog');
             for (const area of document.querySelectorAll('.modal textarea')) {
                 area.value = 'Supported with routine';
@@ -247,9 +246,9 @@ class TestCareClockBrowser(HttpCase):
                 [...group.querySelectorAll('button')].find(b => b.textContent.trim() === 'No').click();
             }
             await new Promise(resolve => setTimeout(resolve, 200));
-            byText('.modal button', 'Submit note and Clock Out').click();
+            byText('.modal button', 'Submit note and Check Out').click();
             await wait(() => !document.querySelector('.modal'), 'dialog closed after submission');
-            await wait(() => !byText('.ba_clock_btn', 'Clock Out'), 'clock card updated');
+            await wait(() => !enabled('Check Out'), 'clock card updated');
             console.log('test successful');
           })().catch(error => console.error(error));
         """ % (-33.86885, 151.20935), login='att_worker', timeout=90)

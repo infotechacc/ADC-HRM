@@ -23,7 +23,7 @@ class ResConfigSettings(models.TransientModel):
         string='Maximum GPS uncertainty (m)', config_parameter='binaryaid_care.gps_max_accuracy_m', default=100,
         help='Readings less precise than this are rejected; the worker can retry or report an exception.')
     binaryaid_clock_out_time_rule = fields.Selection(
-        [('tap', 'When Clock Out is tapped (note writing is unpaid)'),
+        [('tap', 'When Check Out is tapped (note writing is unpaid)'),
          ('note_submit', 'When the shift note is submitted (note writing is paid)')],
         string='Recorded sign out time', config_parameter='binaryaid_care.clock_out_time_rule', default='tap')
     binaryaid_incident_max_upload_mb = fields.Integer(

@@ -19,21 +19,31 @@
                     <div class="ba_clock_body">
                     <p t-if="d.clock.plan" class="ba_clock_plan"><span class="ba_eyebrow d-block">Shift plan</span><t t-esc="d.clock.plan"/></p>
                     <span t-if="d.clock.note_draft" class="ba_clock_line text-muted"><i class="fa fa-pencil me-1" aria-hidden="true"/>Your shift note draft is saved.</span>
-                    <button t-if="d.clock.action === 'in'" type="button" class="btn btn-success btn-lg ba_clock_btn" t-att-disabled="clockState.busy" t-on-click="clockIn">
-                        <span t-if="clockState.busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"/>Clock In
-                    </button>
-                    <button t-if="d.clock.action === 'out'" type="button" class="btn btn-danger btn-lg ba_clock_btn" t-on-click="clockOut">Clock Out</button>
-                    <button t-if="d.clock.action === 'blocked'" type="button" class="btn btn-secondary btn-lg ba_clock_btn" disabled="disabled">Signed in elsewhere</button>
+                    <t t-call="binaryaid_care_attendance.ClockButtons"/>
+                    <span t-if="d.clock.action === 'blocked'" class="ba_clock_line text-muted d-block mt-2">You are signed in to another shift. Check out of that shift first.</span>
                     <p t-if="clockState.error" class="alert alert-danger mb-0 mt-2 py-2" role="alert" t-esc="clockState.error"/>
-                    <button type="button" class="btn btn-link ba_clock_link" t-on-click="() => this.reportClockException(d.clock.action === 'out' ? 'out' : 'in')">Can't sign <t t-esc="d.clock.action === 'out' ? 'out' : 'in'"/>? Report a problem</button>
+                    <button type="button" class="btn btn-link ba_clock_link" t-on-click="() => this.reportClockException(d.clock.action === 'out' ? 'out' : 'in')">Can't check <t t-esc="d.clock.action === 'out' ? 'out' : 'in'"/>? Report a problem</button>
                     </div>
                 </t>
                 <t t-else="">
-                    <div class="ba_clock_body"><span class="ba_eyebrow">Clock</span>
-                    <span class="ba_clock_line text-muted d-block">Clock In opens <t t-esc="d.clock.early"/> minutes before your next published shift.</span></div>
+                    <div class="ba_clock_body"><span class="ba_eyebrow">Attendance</span>
+                    <t t-call="binaryaid_care_attendance.ClockButtons"/>
+                    <span class="ba_clock_line text-muted d-block mt-2">Check In opens <t t-esc="d.clock.early"/> minutes before your next published shift.</span></div>
                 </t>
             </section>
         </xpath>
+    </t>
+
+    <!-- Check In and Check Out are always both shown; only the one that applies now is enabled. -->
+    <t t-name="binaryaid_care_attendance.ClockButtons">
+        <div class="ba_clock_buttons">
+            <button type="button" class="btn btn-success btn-lg ba_clock_btn" t-att-disabled="d.clock.action !== 'in' or clockState.busy" t-on-click="clockIn">
+                <span t-if="clockState.busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"/><i t-else="" class="fa fa-sign-in me-2" aria-hidden="true"/>Check In
+            </button>
+            <button type="button" class="btn btn-danger btn-lg ba_clock_btn" t-att-disabled="d.clock.action !== 'out'" t-on-click="clockOut">
+                <i class="fa fa-sign-out me-2" aria-hidden="true"/>Check Out
+            </button>
+        </div>
     </t>
 
     <t t-name="binaryaid_care_attendance.ExceptionForm">
@@ -79,7 +89,7 @@
             <div t-else="" class="alert alert-danger" role="alert" t-esc="state.error"/>
             <t t-set-slot="footer">
                 <t t-if="state.form and state.mode === 'note'">
-                    <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="submit"><span t-if="state.busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"/>Submit note and Clock Out</button>
+                    <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="submit"><span t-if="state.busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"/>Submit note and Check Out</button>
                     <button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="saveDraftAndClose">Save draft</button>
                     <button class="btn btn-link" t-on-click="showException">Can't sign out here?</button>
                 </t>

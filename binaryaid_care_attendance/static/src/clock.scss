@@ -12,6 +12,7 @@
     .ba_clock_body { display: flex; flex-direction: column; padding: 14px 16px 10px; }
     .ba_clock_plan { margin: 0 0 4px; padding: 10px 12px; border-radius: 8px; background: #f0e9fe; color: #3b2a63; font-size: 13px; white-space: pre-line;
         .ba_eyebrow { color: #7c3aed; } }
-    .ba_clock_btn { margin-top: 10px; width: 100%; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 17px; }
+    .ba_clock_buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .ba_clock_btn { width: 100%; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 17px; }
     .ba_clock_link { align-self: center; font-size: 13px; padding: 8px 0 0; }
 }
