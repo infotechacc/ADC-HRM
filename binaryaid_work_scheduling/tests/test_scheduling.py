@@ -190,8 +190,11 @@ class TestScheduleBrowser(HttpCase):
                 throw new Error('Published shift missing from dashboard');
             }
             const button = [...document.querySelectorAll('.ba_dashboard button')]
-                .find(el => el.textContent.includes('Open calendar'));
+                .find(el => el.textContent.includes('All shifts'));
             button.click();
+            // Shifts open in the list view first; the calendar stays one click away.
+            await waitFor('.o_list_view .o_data_row');
+            (await waitFor('.o_switch_view.o_calendar')).click();
             await waitFor('.o_calendar_view');
             const event = await waitFor('.fc-event');
             event.click();

@@ -6,8 +6,6 @@ from odoo import api, fields, models, _
 from odoo.exceptions import AccessError
 from odoo.tools import format_date, format_datetime
 
-from odoo.addons.binaryaid_hrms_dashboard.models.dashboard import ATTENTION_LIMIT
-
 ROSTER_DAYS = 14
 
 
@@ -176,26 +174,6 @@ class HrmsDashboard(models.AbstractModel):
         return {'id': shift.id, 'time': format_datetime(self.env, shift.start, tz=self._viewer_tz(), dt_format='HH:mm'),
                 'worker': short, 'title': shift.name, 'state': shift.state, 'unfilled': not shift.employee_id}
 
-    def _unpublished_tab(self, domain):
-        shifts = self.env['binaryaid.work.shift'].search(domain, order='start, id', limit=ATTENTION_LIMIT)
-        tz = self._viewer_tz()
-        items = [{
-            'source': 'shift', 'id': shift.id, 'title': shift.employee_name, 'subtitle': shift.name,
-            'meta': '%s · %s' % (format_datetime(self.env, shift.start, tz=tz, dt_format='EEE d MMM'), self._time_label(shift)),
-            'tone': 'purple', 'warning': '',
-            'actions': [{'name': 'publish', 'label': _('Publish'), 'style': 'success'},
-                        {'name': 'open', 'label': _('Edit'), 'style': 'link'}],
-        } for shift in shifts]
-        return {'key': 'unpublished', 'label': _('Drafts'), 'icon': 'fa-pencil-square-o',
-                'count': self.env['binaryaid.work.shift'].search_count(domain), 'items': items,
-                'empty': _('Every shift in the next 14 days is published.')}
-
-    def _attention_tabs(self, specs):
-        tabs = super()._attention_tabs(specs)
-        if 'unpublished' in specs:
-            tabs.insert(0, self._unpublished_tab(specs['unpublished'][2]))
-        return tabs
-
     def _quick_actions(self, admin):
         actions = super()._quick_actions(admin)
         if self._is_shift_admin():
@@ -212,11 +190,10 @@ class HrmsDashboard(models.AbstractModel):
         if self._is_shift_admin():
             data['today'] = self._today_board()
             data['coverage'] = self._coverage()
-            data['shortcuts'].insert(0, {'key': 'work_schedule', 'label': _('Shift calendar'), 'icon': 'fa-calendar'})
         if data['can_work']:
             data['schedule'] = self._own_schedule()
             if not self._is_shift_admin():
-                data['shortcuts'].insert(0, {'key': 'work_schedule', 'label': _('My shift calendar'), 'icon': 'fa-calendar'})
+                data['shortcuts'].insert(0, {'key': 'work_schedule', 'label': _('My shifts'), 'icon': 'fa-calendar'})
         return data
 
     @api.model
@@ -266,9 +243,6 @@ class HrmsDashboard(models.AbstractModel):
         shift = self._attention_record(source, res_id)
         if name == 'open':
             return self._dialog(shift, view=self._shift_form_view(shift))
-        if name == 'publish':
-            shift.action_publish()
-            return True
         raise AccessError(_('This action is not available for this item.'))
 
     @api.model
