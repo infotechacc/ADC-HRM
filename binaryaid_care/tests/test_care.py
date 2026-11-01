@@ -66,6 +66,9 @@ class TestCareClients(CareCase):
         self.assertEqual(len(self.client.plan_ids), 3)
         shift = self.shift()
         self.assertEqual(shift.client_plan_ids, self.client.plan_ids)
+        action = self.env.ref('binaryaid_care.action_care_plan')
+        self.assertEqual(action.view_mode, 'list,form')
+        self.env['binaryaid.care.plan'].with_user(self.admin).get_views([(False, 'list'), (False, 'form')])
 
     def test_client_documents(self):
         Document = self.env['binaryaid.care.client.document'].with_user(self.admin)

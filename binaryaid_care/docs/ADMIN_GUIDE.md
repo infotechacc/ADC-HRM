@@ -33,7 +33,8 @@ stop new shifts; history is kept.
   Each file has *Preview* and *Download* buttons.
 
 ## Plans
-Care Operations ▸ Plans. Enter a plan name to create it; all plans are listed.
+Care Operations ▸ Plans lists all plans. Click *New*, enter the plan name and *Save*;
+click a plan to open and rename it.
 
 ## Shifts
 Create from the dashboard (button or planner day). Choose the client first: the

@@ -4,18 +4,25 @@
     <record id="view_care_plan_list" model="ir.ui.view">
         <field name="name">binaryaid.care.plan.list</field><field name="model">binaryaid.care.plan</field>
         <field name="arch" type="xml">
-            <list editable="bottom"><field name="name"/></list>
+            <list string="Plans"><field name="name"/></list>
         </field>
     </record>
     <record id="view_care_plan_form" model="ir.ui.view">
         <field name="name">binaryaid.care.plan.form</field><field name="model">binaryaid.care.plan</field>
         <field name="arch" type="xml">
-            <form string="Care plan"><sheet><group><field name="name"/></group></sheet></form>
+            <form string="Plan">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Morning routine"/></h1>
+                    </div>
+                </sheet>
+            </form>
         </field>
     </record>
     <record id="action_care_plan" model="ir.actions.act_window">
         <field name="name">Plans</field><field name="res_model">binaryaid.care.plan</field>
-        <field name="view_mode">list</field><field name="path">care-plans</field>
+        <field name="view_mode">list,form</field><field name="path">care-plans</field>
         <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Create your first care plan</p><p>Enter a plan name. Plans can then be assigned to clients.</p></field>
     </record>
 
