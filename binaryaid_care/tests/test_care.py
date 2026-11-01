@@ -67,10 +67,28 @@ class TestCareClients(CareCase):
         self.assertEqual(len(morning.line_ids), 3)
         with self.assertRaises(AccessError):
             self.env['binaryaid.care.plan.line'].with_user(self.alice_user).create({'plan_id': morning.id, 'name': 'x'})
-        self.client.with_user(self.admin).plan_ids = [(6, 0, (morning | meals).ids)]
-        self.assertEqual(self.client.plan_ids, morning | meals)
-        self.client.with_user(self.admin).plan_ids = [(0, 0, {'name': 'Community access'})]
-        self.assertEqual(len(self.client.plan_ids), 3)
+        client = self.client.with_user(self.admin)
+        client.plan_ids = [(6, 0, (morning | meals).ids)]
+        self.assertEqual(client.service_ids.mapped('name'), ['Personal care', 'Medication prompt', 'Breakfast'])
+        self.assertEqual(client.service_ids.plan_id, morning)
+        client.service_ids = [(0, 0, {'name': 'Gardening'})]
+        client.plan_ids = [(3, morning.id)]
+        self.assertEqual(client.service_ids.mapped('name'), ['Gardening'], 'extra lines stay, plan services go')
+        client.plan_ids = [(4, morning.id)]
+        self.assertEqual(len(client.service_ids), 4)
+        client.plan_ids = [(4, morning.id)]
+        self.assertEqual(len(client.service_ids), 4, 'no duplicate services')
+        # The form fills the services as soon as a plan is chosen.
+        from odoo.tests import Form
+        with Form(self.env['binaryaid.care.client'].with_user(self.admin)) as form:
+            form.name = 'Form client'
+            form.plan_ids.add(morning)
+            self.assertEqual(len(form.service_ids), 3)
+            with form.service_ids.new() as line:
+                line.name = 'Extra walk'
+        self.assertEqual(len(form.record.service_ids), 4)
+        with self.assertRaises(AccessError):
+            client.service_ids.with_user(self.alice_user).read(['name'])
         shift = self.shift()
         self.assertEqual(shift.client_plan_ids, self.client.plan_ids)
         action = self.env.ref('binaryaid_care.action_care_plan')

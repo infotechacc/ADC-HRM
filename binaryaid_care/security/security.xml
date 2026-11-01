@@ -76,6 +76,11 @@
         <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
         <field name="domain_force">[('employee_id', '!=', False)]</field>
     </record>
+    <record id="rule_client_service_company" model="ir.rule">
+        <field name="name">Client services: allowed companies</field>
+        <field name="model_id" ref="model_binaryaid_care_client_service"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
     <record id="rule_client_document_company" model="ir.rule">
         <field name="name">Client documents: allowed companies</field>
         <field name="model_id" ref="model_binaryaid_care_client_document"/>

@@ -27,8 +27,10 @@ latitude, longitude, timezone and clock radius. Workers can only check in and ou
 within the clock radius of these coordinates. Archive a client (⚙ ▸ Archive) to
 stop new shifts; history is kept.
 
-- **Care Plans tab**: *Add a line* lists every plan from Care Operations ▸ Plans;
-  tick one or more to assign them, or click *New* to create a plan on the spot.
+- **Care plans** (after Clock radius): choose one or more plans from
+  Care Operations ▸ Plans.
+- **Care Plans tab**: lists every service of the chosen plans. Removing a plan
+  removes its services. Use *Add a line* to add extra services for this client only.
 - **Documents tab**: *Add a line* and choose a file; upload as many as needed.
   Each file has *Preview* and *Download* buttons.
 

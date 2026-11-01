@@ -62,6 +62,7 @@
                             <field name="longitude"/>
                             <field name="timezone"/>
                             <field name="radius_m"/>
+                            <field name="plan_ids" widget="many2many_tags" options="{'no_create_edit': True}" placeholder="Choose care plans"/>
                         </group>
                     </group>
                     <separator string="Alternative contacts"/>
@@ -70,8 +71,12 @@
                     </field>
                     <notebook>
                         <page string="Care Plans" name="plans">
-                            <field name="plan_ids">
-                                <list><field name="name"/><field name="line_ids" widget="many2many_tags" string="Services"/></list>
+                            <field name="service_ids" context="{'default_client_id': id}">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name" placeholder="Add an extra service"/>
+                                    <field name="plan_id" readonly="1" force_save="1" string="From care plan"/>
+                                </list>
                             </field>
                         </page>
                         <page string="Documents" name="documents">

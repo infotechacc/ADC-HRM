@@ -1,6 +1,6 @@
 import pytz
 
-from odoo import api, fields, models, _
+from odoo import Command, api, fields, models, _
 from odoo.exceptions import ValidationError
 
 ADMIN_GROUPS = 'binaryaid_work_management.group_work_admin,binaryaid_care.group_care_reviewer'
@@ -44,6 +44,7 @@ class CareClient(models.Model):
     contact_ids = fields.One2many('binaryaid.care.client.contact', 'client_id', string='Alternative contacts',
                                   groups=ADMIN_GROUPS)
     plan_ids = fields.Many2many('binaryaid.care.plan', string='Care plans', groups=ADMIN_GROUPS)
+    service_ids = fields.One2many('binaryaid.care.client.service', 'client_id', string='Services', groups=ADMIN_GROUPS)
     document_ids = fields.One2many('binaryaid.care.client.document', 'client_id', string='Documents', groups=ADMIN_GROUPS)
     location_ids = fields.One2many('binaryaid.care.service.location', 'client_id', string='Service locations')
     shift_ids = fields.One2many('binaryaid.work.shift', 'client_id', string='Shifts')
@@ -56,6 +57,44 @@ class CareClient(models.Model):
     radius_m = fields.Integer(string='Clock radius (m)', compute='_compute_location', inverse='_inverse_location')
 
     _reference_unique = models.Constraint('UNIQUE(company_id, reference)', 'The client ID must be unique.')
+
+    def _plan_service_split(self):
+        """Service lines of plans that are no longer selected, and the services of selected
+        plans that are still missing. Lines added only for this client are always kept."""
+        self.ensure_one()
+        selected = set(self.plan_ids._origin.ids)
+        removed = self.service_ids.filtered(lambda l: l.plan_id and l.plan_id._origin.id not in selected)
+        present = {(l.plan_id._origin.id, l.name) for l in self.service_ids - removed if l.plan_id}
+        missing = [{'plan_id': plan.id, 'name': line.name, 'sequence': line.sequence}
+                   for plan in self.plan_ids._origin for line in plan.line_ids if (plan.id, line.name) not in present]
+        return removed, missing
+
+    @api.onchange('plan_ids')
+    def _onchange_plan_ids(self):
+        removed, missing = self._plan_service_split()
+        if removed:
+            self.service_ids -= removed
+        if missing:
+            self.service_ids = [Command.create(vals) for vals in missing]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        clients = super().create(vals_list)
+        clients._sync_plan_services()
+        return clients
+
+    def write(self, vals):
+        result = super().write(vals)
+        if 'plan_ids' in vals:
+            self._sync_plan_services()
+        return result
+
+    def _sync_plan_services(self):
+        for client in self:
+            removed, missing = client._plan_service_split()
+            removed.unlink()
+            if missing:
+                client.service_ids = [Command.create(vals) for vals in missing]
 
     @api.depends('location_ids.name', 'location_ids.latitude', 'location_ids.longitude',
                  'location_ids.timezone', 'location_ids.radius_m')
@@ -79,6 +118,19 @@ class CareClient(models.Model):
             else:
                 self.env['binaryaid.care.service.location'].create(
                     dict(values, client_id=client.id, radius_m=client.radius_m or 50))
+
+
+class ClientService(models.Model):
+    _name = 'binaryaid.care.client.service'
+    _description = 'Client Service'
+    _order = 'client_id, sequence, id'
+
+    client_id = fields.Many2one('binaryaid.care.client', required=True, ondelete='cascade', index=True)
+    company_id = fields.Many2one(related='client_id.company_id', store=True)
+    sequence = fields.Integer(default=100)
+    name = fields.Char(string='Service', required=True)
+    plan_id = fields.Many2one('binaryaid.care.plan', string='Care plan', ondelete='cascade',
+                              help='Empty for services added only for this client.')
 
 
 class ClientContact(models.Model):

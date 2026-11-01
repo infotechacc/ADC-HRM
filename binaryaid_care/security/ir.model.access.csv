@@ -16,6 +16,8 @@ access_plan_user,care.plan.user,model_binaryaid_care_plan,base.group_user,1,0,0,
 access_plan_admin,care.plan.admin,model_binaryaid_care_plan,binaryaid_work_management.group_work_admin,1,1,1,1
 access_plan_line_user,care.plan.line.user,model_binaryaid_care_plan_line,base.group_user,1,0,0,0
 access_plan_line_admin,care.plan.line.admin,model_binaryaid_care_plan_line,binaryaid_work_management.group_work_admin,1,1,1,1
+access_client_service_reviewer,care.client.service.reviewer,model_binaryaid_care_client_service,group_care_reviewer,1,0,0,0
+access_client_service_admin,care.client.service.admin,model_binaryaid_care_client_service,binaryaid_work_management.group_work_admin,1,1,1,1
 access_client_document_reviewer,care.client.document.reviewer,model_binaryaid_care_client_document,group_care_reviewer,1,0,0,0
 access_client_document_admin,care.client.document.admin,model_binaryaid_care_client_document,binaryaid_work_management.group_work_admin,1,1,1,1
 access_location_worker,care.location.worker,model_binaryaid_care_service_location,binaryaid_work_management.group_work_user,1,0,0,0
