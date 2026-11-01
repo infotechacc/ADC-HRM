@@ -54,8 +54,8 @@ class TestCareClients(CareCase):
         self.assertEqual((self.location.name, self.location.latitude, self.location.radius_m), ('22 High St, Penrith', -33.75, 80))
         with self.assertRaises(ValidationError):
             client.radius_m = 0
-        client.contact_ids = [(0, 0, {'name': 'Helen', 'phone': '0411 000 000', 'email': 'helen@example.com'})]
-        self.assertEqual(client.contact_ids.name, 'Helen')
+        client.write({'contact_name': 'Helen', 'contact_phone': '0411 000 000', 'contact_email': 'helen@example.com'})
+        self.assertEqual((client.contact_name, client.contact_phone), ('Helen', '0411 000 000'))
 
     def test_care_plans(self):
         Plan = self.env['binaryaid.care.plan'].with_user(self.admin)

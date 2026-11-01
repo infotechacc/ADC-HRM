@@ -41,8 +41,9 @@ class CareClient(models.Model):
     company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company, index=True)
     phone = fields.Char(string='Client phone', groups=ADMIN_GROUPS)
     email = fields.Char(string='Client email', groups=ADMIN_GROUPS)
-    contact_ids = fields.One2many('binaryaid.care.client.contact', 'client_id', string='Alternative contacts',
-                                  groups=ADMIN_GROUPS)
+    contact_name = fields.Char(string='Alternative contact name', groups=ADMIN_GROUPS)
+    contact_phone = fields.Char(string='Alternative contact phone', groups=ADMIN_GROUPS)
+    contact_email = fields.Char(string='Alternative contact email', groups=ADMIN_GROUPS)
     plan_ids = fields.Many2many('binaryaid.care.plan', string='Care plans', groups=ADMIN_GROUPS)
     service_ids = fields.One2many('binaryaid.care.client.service', 'client_id', string='Services', groups=ADMIN_GROUPS)
     document_ids = fields.One2many('binaryaid.care.client.document', 'client_id', string='Documents', groups=ADMIN_GROUPS)
@@ -131,19 +132,6 @@ class ClientService(models.Model):
     name = fields.Char(string='Service', required=True)
     plan_id = fields.Many2one('binaryaid.care.plan', string='Care plan', ondelete='cascade',
                               help='Empty for services added only for this client.')
-
-
-class ClientContact(models.Model):
-    _name = 'binaryaid.care.client.contact'
-    _description = 'Client Alternative Contact'
-    _order = 'client_id, sequence, id'
-
-    client_id = fields.Many2one('binaryaid.care.client', required=True, ondelete='cascade', index=True)
-    company_id = fields.Many2one(related='client_id.company_id', store=True)
-    sequence = fields.Integer(default=10)
-    name = fields.Char(required=True)
-    phone = fields.Char()
-    email = fields.Char()
 
 
 class ClientDocument(models.Model):

@@ -22,7 +22,7 @@ notifies the worker. If publishing is blocked, the draft is kept and the reason 
 
 ## Clients
 Care Operations ▸ Clients. One form holds the client name, phone and email,
-alternative contacts (name, phone, email) and the service location with its
+the alternative contact's name, phone and email, and the service location with its
 latitude, longitude, timezone and clock radius. Workers can only check in and out
 within the clock radius of these coordinates. Archive a client (⚙ ▸ Archive) to
 stop new shifts; history is kept.

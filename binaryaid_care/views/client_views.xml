@@ -64,11 +64,12 @@
                             <field name="radius_m"/>
                             <field name="plan_ids" widget="many2many_tags" options="{'no_create_edit': True}" placeholder="Choose care plans"/>
                         </group>
+                        <group string="Alternative contact">
+                            <field name="contact_name" string="Name"/>
+                            <field name="contact_phone" string="Phone" widget="phone"/>
+                            <field name="contact_email" string="Email" widget="email"/>
+                        </group>
                     </group>
-                    <separator string="Alternative contacts"/>
-                    <field name="contact_ids" context="{'default_client_id': id}">
-                        <list editable="bottom"><field name="name"/><field name="phone" widget="phone"/><field name="email" widget="email"/></list>
-                    </field>
                     <notebook>
                         <page string="Care Plans" name="plans">
                             <field name="service_ids" context="{'default_client_id': id}">

@@ -10,8 +10,6 @@ access_review_wizard,care.review.wizard,model_binaryaid_care_document_review,hr.
 access_client_worker,care.client.worker,model_binaryaid_care_client,binaryaid_work_management.group_work_user,1,0,0,0
 access_client_reviewer,care.client.reviewer,model_binaryaid_care_client,group_care_reviewer,1,0,0,0
 access_client_admin,care.client.admin,model_binaryaid_care_client,binaryaid_work_management.group_work_admin,1,1,1,0
-access_contact_reviewer,care.contact.reviewer,model_binaryaid_care_client_contact,group_care_reviewer,1,0,0,0
-access_contact_admin,care.contact.admin,model_binaryaid_care_client_contact,binaryaid_work_management.group_work_admin,1,1,1,1
 access_plan_user,care.plan.user,model_binaryaid_care_plan,base.group_user,1,0,0,0
 access_plan_admin,care.plan.admin,model_binaryaid_care_plan,binaryaid_work_management.group_work_admin,1,1,1,1
 access_plan_line_user,care.plan.line.user,model_binaryaid_care_plan_line,base.group_user,1,0,0,0
