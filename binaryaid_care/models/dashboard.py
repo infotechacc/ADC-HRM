@@ -46,10 +46,12 @@ class HrmsDashboard(models.AbstractModel):
             keys.insert(0, 'messages')
         return keys
 
-    def _shift_chip(self, shift):
-        chip = super()._shift_chip(shift)
-        chip['client'] = shift.client_id.name or ''
-        return chip
+    def _enrich_day_rows(self, rows, shifts):
+        super()._enrich_day_rows(rows, shifts)
+        for row, shift in zip(rows, shifts):
+            row['client'] = shift.client_id.name or ''
+            if not shift.employee_id:
+                row.update(employee=_('Unfilled'), initials='?', unfilled=True)
 
     def _shift_status(self, shift, now):
         if not shift.employee_id:
@@ -80,11 +82,6 @@ class HrmsDashboard(models.AbstractModel):
     def get_overview(self):
         data = super().get_overview()
         data['messages'] = self._own_messages() if self.env.user.employee_id else None
-        for row in (data.get('today') or {}).get('rows', []):
-            shift = self.env['binaryaid.work.shift'].browse(row['id'])
-            row['client'] = shift.client_id.name or ''
-            if not shift.employee_id:
-                row.update(employee=_('Unfilled'), initials='?')
         for item in (data.get('schedule') or {}).get('shifts', []):
             # The worker sees client name, times, approved location and the shift plan only.
             shift = self.env['binaryaid.work.shift'].browse(item['id'])

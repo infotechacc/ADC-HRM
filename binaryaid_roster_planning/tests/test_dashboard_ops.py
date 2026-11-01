@@ -42,11 +42,18 @@ class TestDashboardOperations(TransactionCase):
         self.assertNotIn('attention', data)
         self.assertNotIn('recent_work', data)
         self.assertEqual(cards['shifts_today'], before['shifts_today'] + 1)
-        self.assertEqual(len(data['coverage']['days']), 14)
-        row = next(r for r in data['today']['rows'] if r['id'] == running.id)
+        self.assertNotIn('coverage', data)
+        row = next(r for r in data['day']['rows'] if r['id'] == running.id)
         self.assertEqual(row['status'], 'on_shift')
-        chips = [c['id'] for day in data['coverage']['days'] for c in day['items']]
-        self.assertIn(draft.id, chips)
+        self.assertTrue(row['time_label'] and data['day']['short'])
+        # The month calendar counts the draft on its day; selecting the day lists it as a card.
+        dashboard = self.dashboard.with_user(self.admin).with_context(tz='UTC')
+        draft_day = str(draft.start.date())
+        calendar = dashboard.calendar_month(draft_day)
+        cell = next(d for week in calendar['weeks'] for d in week if d['date'] == draft_day)
+        self.assertGreaterEqual(cell['draft'], 1)
+        self.assertEqual(sum(len(week) for week in calendar['weeks']) % 7, 0)
+        self.assertIn(draft.id, [r['id'] for r in dashboard.day_board(draft_day)['rows']])
         self.assertTrue({'create_shift', 'add_employee'}.issubset({a['key'] for a in data['quick_actions']}))
         dashboard = self.dashboard.with_user(self.admin)
         self.assertEqual(dashboard.item_action('shift', draft.id, 'open')['target'], 'new')
@@ -70,7 +77,10 @@ class TestDashboardOperations(TransactionCase):
         draft = self.shift(self.employee, now + timedelta(days=1), now + timedelta(days=1, hours=4))
         data, cards = self.overview(self.alice)
         self.assertFalse(data['admin'])
-        self.assertFalse(data['today'])
+        self.assertFalse(data['day'])
+        for method in ('calendar_month', 'day_board'):
+            with self.assertRaises(AccessError):
+                getattr(self.dashboard.with_user(self.alice), method)(str(now.date()))
         self.assertNotIn('unpublished', cards)
         self.assertIn('presence', data)
         dashboard = self.dashboard.with_user(self.alice)
@@ -110,7 +120,8 @@ class TestDashboardOperationsUI(HttpCase):
                 if (document.querySelector(gone)) throw new Error('Removed section still shown: ' + gone);
             }
             if (byText('.ba_header button', 'Review requests')) throw new Error('Review requests still shown');
-            (await wait(() => byText('.ba_cal_item', 'Dialog'), 'draft in calendar')).click();
+            (await wait(() => document.querySelector('.ba_month_day[aria-label^="%s"]'), 'draft day in calendar')).click();
+            (await wait(() => byText('.ba_shift_tile', 'Dialog'), 'shift card for the day')).click();
             await wait(() => document.querySelector('.o_dialog .o_form_view'), 'shift dialog');
             document.querySelector('.o_dialog .btn-close').click();
             await wait(() => !document.querySelector('.o_dialog'), 'shift dialog closed');
@@ -118,10 +129,11 @@ class TestDashboardOperationsUI(HttpCase):
             await wait(() => document.querySelector('.o_dialog .o_form_view'), 'create shift dialog');
             document.querySelector('.o_dialog .btn-close, .o_dialog .o_form_button_cancel').click();
             await wait(() => !document.querySelector('.o_dialog'), 'dialog closed');
-            const day = await wait(() => document.querySelector('button.ba_plan_day:not(:disabled)'), 'planner day');
-            day.click();
-            await wait(() => document.querySelector('.o_dialog .o_form_view'), 'planner dialog');
+            (await wait(() => byText('.ba_dayview button', 'Assign shift'), 'assign shift button')).click();
+            await wait(() => document.querySelector('.o_dialog .o_form_view'), 'assign shift dialog');
+            if (document.querySelector('.o_dialog div[name="unpaid_break_minutes"]')) throw new Error('Unpaid break still shown');
+            if (!document.querySelector('.o_dialog div[name="location"] input')) throw new Error('Location is not editable');
             console.log('test successful');
           })().catch(error => console.error(error));
-        """, login=admin.login, timeout=90)
+        """ % str(draft.start.date()), login=admin.login, timeout=90)
         self.assertEqual(draft.state, 'draft')

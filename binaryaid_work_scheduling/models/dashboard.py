@@ -132,47 +132,81 @@ class HrmsDashboard(models.AbstractModel):
             'planned_hours': round(sum(i['hours'] for i in items if not i['past']), 2),
         }
 
-    def _today_board(self):
-        """Every shift touching the viewer's local today, for administrators."""
-        start, end = self._utc_bounds(fields.Date.context_today(self), 1)
+    def _day_board(self, date):
+        """Shift cards for one local date, for administrators."""
+        start, end = self._utc_bounds(date, 1)
         shifts = self.env['binaryaid.work.shift'].search([
             ('company_id', '=', self.env.company.id), ('state', 'in', ['draft', 'published']),
-            ('start', '<', end), ('end', '>', start)], order='start, employee_name', limit=60)
+            ('start', '<', end), ('end', '>', start)], order='start, employee_name', limit=100)
         now = fields.Datetime.now()
         rows = []
         for shift in shifts:
             status, label, tone = self._shift_status(shift, now)
             rows.append({'id': shift.id, 'employee': shift.employee_name, 'name': shift.name,
                          'initials': ''.join(part[0] for part in name_parts(shift.employee_name)[:2]).upper() or '?',
-                         'time_label': self._time_label(shift), 'location': shift.location or '',
-                         'hours': round(shift.planned_hours, 2), 'state': shift.state,
+                         'time_label': self._time_label(shift), 'location': shift.location or '', 'client': '',
+                         'hours': round(shift.planned_hours, 2), 'state': shift.state, 'unfilled': False,
                          'status': status, 'status_label': label, 'tone': tone})
-        return {'rows': rows, 'limited': len(shifts) == 60}
+        self._enrich_day_rows(rows, shifts)
+        today = fields.Date.context_today(self)
+        return {'date': str(date), 'label': format_date(self.env, date, date_format='EEEE d MMMM y'),
+                'short': format_date(self.env, date, date_format='EEE d MMM'),
+                'today': date == today, 'past': date < today, 'rows': rows, 'limited': len(shifts) == 100}
 
-    def _coverage(self):
-        first_date = self._roster_start()
-        start, end = self._utc_bounds(first_date, ROSTER_DAYS)
+    def _enrich_day_rows(self, rows, shifts):
+        """Extensions add attendance, client and unfilled details to the day's shift cards."""
+
+    def _month_calendar(self, date):
+        """Monday-first month grid with the number of shifts on each day."""
+        tz = pytz.timezone(self._viewer_tz())
+        first = date.replace(day=1)
+        grid_start = first - timedelta(days=first.weekday())
+        next_month = (first + timedelta(days=32)).replace(day=1)
+        grid_end = next_month + timedelta(days=(7 - next_month.weekday()) % 7)
+        start, end = self._utc_bounds(grid_start, (grid_end - grid_start).days)
         shifts = self.env['binaryaid.work.shift'].search([
             ('company_id', '=', self.env.company.id), ('state', 'in', ['draft', 'published']),
             ('start', '<', end), ('end', '>', start)])
-        days = self._roster_days(shifts, first_date)
-        tz = pytz.timezone(self._viewer_tz())
-        by_date = {day['date']: day for day in days}
-        for day in days:
-            day['items'] = []
-        # Calendar entries sit on their local start day; overnight shifts show their end time.
-        for shift in shifts.sorted('start'):
-            day = by_date.get(str(pytz.UTC.localize(shift.start).astimezone(tz).date()))
-            if day is not None:
-                day['items'].append(self._shift_chip(shift))
-        return {'days': days, 'period': self._period_label(first_date), 'timezone': self._viewer_tz()}
+        today = fields.Date.context_today(self)
+        days = {}
+        current = grid_start
+        while current < grid_end:
+            days[current] = {'date': str(current), 'number': current.day, 'in_month': current.month == first.month,
+                             'today': current == today, 'past': current < today,
+                             'count': 0, 'draft': 0, 'unfilled': 0}
+            current += timedelta(days=1)
+        for shift in shifts:
+            first_day = pytz.UTC.localize(shift.start).astimezone(tz).date()
+            last_day = (pytz.UTC.localize(shift.end).astimezone(tz) - timedelta(microseconds=1)).date()
+            day = max(first_day, grid_start)
+            while day <= last_day and day < grid_end:
+                info = days[day]
+                info['count'] += 1
+                if shift.state == 'draft':
+                    info['draft'] += 1
+                if not shift.employee_id:
+                    info['unfilled'] += 1
+                day += timedelta(days=1)
+        ordered = list(days.values())
+        return {'month': str(first), 'label': format_date(self.env, first, date_format='MMMM y'),
+                'weekdays': [format_date(self.env, grid_start + timedelta(days=n), date_format='EEE') for n in range(7)],
+                'weeks': [ordered[n:n + 7] for n in range(0, len(ordered), 7)]}
 
-    def _shift_chip(self, shift):
-        name = shift.employee_name or ''
-        parts = name_parts(name)
-        short = ('%s %s.' % (parts[0], parts[-1][0])) if len(parts) > 1 else (parts[0] if parts else name)
-        return {'id': shift.id, 'time': format_datetime(self.env, shift.start, tz=self._viewer_tz(), dt_format='HH:mm'),
-                'worker': short, 'title': shift.name, 'state': shift.state, 'unfilled': not shift.employee_id}
+    @api.model
+    @api.readonly
+    def calendar_month(self, date):
+        self._check_user()
+        if not self._is_shift_admin():
+            raise AccessError(_('Only Work Management administrators can view the shift calendar.'))
+        return self._month_calendar(fields.Date.to_date(date))
+
+    @api.model
+    @api.readonly
+    def day_board(self, date):
+        self._check_user()
+        if not self._is_shift_admin():
+            raise AccessError(_('Only Work Management administrators can view the shift calendar.'))
+        return self._day_board(fields.Date.to_date(date))
 
     def _quick_actions(self, admin):
         actions = super()._quick_actions(admin)
@@ -185,11 +219,12 @@ class HrmsDashboard(models.AbstractModel):
     def get_overview(self):
         data = super().get_overview()
         data['schedule'] = None
-        data['today'] = None
-        data['coverage'] = None
+        data['day'] = None
+        data['calendar'] = None
         if self._is_shift_admin():
-            data['today'] = self._today_board()
-            data['coverage'] = self._coverage()
+            today = fields.Date.context_today(self)
+            data['day'] = self._day_board(today)
+            data['calendar'] = self._month_calendar(today)
         if data['can_work']:
             data['schedule'] = self._own_schedule()
             if not self._is_shift_admin():

@@ -33,8 +33,7 @@ there are no action item, go to, recent work item or My account sections.
 **Administrators** (Work Management administrators or HR officers):
 - Quick actions in the header open dialogs over the dashboard: Create shift, Add client, Add employee. Dialogs refresh the figures when closed.
 - Figures: today's shifts, working now, unfilled shifts, missing sign-outs, clock exceptions, leave to review, timesheet reviews. Alert figures are highlighted. Selecting a figure opens its list.
-- Today's shifts with attendance status and filter chips. A row opens the shift in a dialog.
-- 14-day calendar of shifts. Selecting a future day opens a new 09:00–17:00 draft shift on that date; every value stays editable.
+- Shift calendar: a month grid (`calendar_month`) with shift and unfilled counts per day. Selecting a date loads that day's shifts (`day_board`) as cards on the right: day and date, time, client, location, worker and attendance status. A card opens the shift in a dialog; *Assign shift* opens a new 09:00–17:00 draft on that date.
 
 **Workers**: Check In and Check Out buttons (both always shown, only the one that
 applies is enabled), current or next shift, large links (My shifts, Incident forms,

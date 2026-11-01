@@ -4,14 +4,6 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 
-const TODAY_FILTERS = [
-    { key: "all", label: _t("All") },
-    { key: "attention", label: _t("Attention"), statuses: ["late", "signed_out", "draft", "unfilled"] },
-    { key: "working", label: _t("Working"), statuses: ["on_shift", "running"] },
-    { key: "upcoming", label: _t("Upcoming"), statuses: ["upcoming"] },
-    { key: "done", label: _t("Finished"), statuses: ["completed", "ended"] },
-];
-const CALENDAR_ITEMS_PER_DAY = 3;
 // Friendly, distinguishable colours: each worker keeps the same colour everywhere.
 const PALETTE = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#14b8a6", "#6366f1", "#f97316", "#0ea5e9", "#84cc16"];
 const NAV_TONES = { work_schedule: "blue", my_incidents: "red", team_messages: "purple", my_leave: "teal", profile: "amber", discuss: "green", my_work: "indigo" };
@@ -24,16 +16,31 @@ export class HrmsDashboard extends Component {
         this.action = useService("action");
         this.notification = useService("notification");
         this.todayRef = useRef("today");
-        this.todayFilters = TODAY_FILTERS;
-        this.calendarLimit = CALENDAR_ITEMS_PER_DAY;
-        this.state = useState({ data: null, loading: true, error: false, todayFilter: "all", busy: null });
+        this.state = useState({
+            data: null, loading: true, error: false, busy: null,
+            calendar: null, day: null, selected: null, dayLoading: false,
+        });
         onWillStart(() => this.load());
     }
     async load() {
         this.state.loading = true;
         this.state.error = false;
         try {
-            this.state.data = await this.orm.call("binaryaid.hrms.dashboard", "get_overview", []);
+            const data = await this.orm.call("binaryaid.hrms.dashboard", "get_overview", []);
+            if (data.calendar && this.state.selected && this.state.selected !== data.day.date) {
+                // Keep the day and month the user is looking at after a refresh.
+                await this.loadPlanner(this.state.calendar.month, this.state.selected);
+            } else if (data.calendar) {
+                this.todayDate = data.day.date;
+                this.state.selected = data.day.date;
+                this.state.day = data.day;
+                if (!this.state.calendar || this.state.calendar.month === data.calendar.month) {
+                    this.state.calendar = data.calendar;
+                } else {
+                    await this.loadPlanner(this.state.calendar.month, null);
+                }
+            }
+            this.state.data = data;
         } catch {
             this.state.error = true;
         } finally {
@@ -90,31 +97,56 @@ export class HrmsDashboard extends Component {
     }
 
     openCard(card) {
-        if (card.key === "shifts_today" && this.todayRef.el) {
-            this.state.todayFilter = "all";
-            this.todayRef.el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (card.key === "shifts_today" && this.state.calendar) {
+            this.goToday();
+            this.todayRef.el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
             return;
         }
         return this.openSection(card.key);
     }
 
-    // Today and calendar -----------------------------------------------------------
-    get todayRows() {
-        const rows = this.state.data?.today?.rows || [];
-        const filter = TODAY_FILTERS.find((f) => f.key === this.state.todayFilter);
-        return filter?.statuses ? rows.filter((row) => filter.statuses.includes(row.status)) : rows;
+    // Shift calendar ---------------------------------------------------------------
+    async loadPlanner(month, date) {
+        const calls = [this.orm.call("binaryaid.hrms.dashboard", "calendar_month", [month])];
+        if (date) {
+            calls.push(this.orm.call("binaryaid.hrms.dashboard", "day_board", [date]));
+        }
+        const [calendar, day] = await Promise.all(calls);
+        this.state.calendar = calendar;
+        if (day) {
+            this.state.day = day;
+        }
     }
-    filterCount(filter) {
-        const rows = this.state.data?.today?.rows || [];
-        return filter.statuses ? rows.filter((row) => filter.statuses.includes(row.status)).length : rows.length;
+    async selectDay(date) {
+        this.state.selected = date;
+        this.state.dayLoading = true;
+        try {
+            const month = `${date.slice(0, 7)}-01`;
+            if (month !== this.state.calendar.month) {
+                await this.loadPlanner(month, date);
+            } else {
+                this.state.day = await this.orm.call("binaryaid.hrms.dashboard", "day_board", [date]);
+            }
+        } catch {
+            this.notification.add(_t("The shifts for this day could not be loaded."), { type: "warning" });
+        } finally {
+            this.state.dayLoading = false;
+        }
+    }
+    async moveMonth(delta) {
+        const [year, month] = this.state.calendar.month.split("-").map(Number);
+        const target = new Date(Date.UTC(year, month - 1 + delta, 1)).toISOString().slice(0, 10);
+        try {
+            await this.loadPlanner(target, null);
+        } catch {
+            this.notification.add(_t("The calendar could not be loaded."), { type: "warning" });
+        }
+    }
+    goToday() {
+        return this.selectDay(this.todayDate);
     }
     openShift(id, title) {
         return this.itemAction({ source: "shift", id, title }, { name: "open", label: _t("Open") });
-    }
-    onDayClick(day) {
-        if (!day.past) {
-            return this.quick("create_shift", day.date);
-        }
     }
 
     // Worker ---------------------------------------------------------------------

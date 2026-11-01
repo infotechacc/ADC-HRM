@@ -10,7 +10,7 @@
                 <field name="service_location_id" readonly="state != 'draft'" options="{'no_create': True}" context="{'short_location': True}" invisible="not client_id"/>
             </xpath>
             <xpath expr="//field[@name='location']" position="attributes">
-                <attribute name="readonly">state != 'draft' or service_location_id</attribute>
+                <attribute name="readonly">state != 'draft'</attribute>
             </xpath>
             <xpath expr="//field[@name='location']" position="after">
                 <field name="binaryaid_revision" invisible="1"/>
@@ -63,13 +63,12 @@
                     <group>
                         <group string="Client and place">
                             <field name="client_id" options="{'no_create': True}" readonly="state != 'draft'"/>
-                            <field name="service_location_id" string="Location" options="{'no_create': True}" context="{'short_location': True}" invisible="not client_id" readonly="state != 'draft'"/>
-                            <field name="location" invisible="client_id" readonly="state != 'draft'"/>
+                            <field name="service_location_id" invisible="1"/>
+                            <field name="location" string="Location" readonly="state != 'draft'" placeholder="Filled from the client; edit if the shift is elsewhere"/>
                         </group>
                         <group string="When">
                             <field name="start" readonly="state != 'draft'"/>
                             <field name="end" readonly="state != 'draft'"/>
-                            <field name="unpaid_break_minutes" string="Unpaid break (min)" readonly="state != 'draft'"/>
                             <field name="timezone" readonly="state != 'draft'"/>
                             <field name="planned_hours" widget="float_time"/>
                         </group>

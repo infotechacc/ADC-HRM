@@ -8,15 +8,17 @@ Open **HRMS Dashboard** (your home page after login).
 - **Figures bar**: today's shifts, working now, unfilled shifts,
   missing sign-outs, clock exceptions, leave to review, timesheet reviews. A figure
   turns red or amber when it needs action; click it to open the matching list.
-- **Today**: every shift today with time, worker, client, location and live status
-  (Signed in, Not signed in, Upcoming, Draft, Unfilled, Finished). Filter with the
-  buttons above the table; click a row to open the shift.
-- **Next 14 days**: a calendar of the actual shifts (time, worker, client).
-  Published shifts have a solid bar, drafts a dashed bar, unfilled shifts are red.
-  Hover a day and click **+** to create a shift on it.
+- **Shift calendar** (left): a month view with the number of shifts on each day
+  and a red badge for unfilled shifts. Use the arrows to change month and
+  *Today* to come back.
+- **Selected day** (right): click a date to see its shifts as cards: day and date,
+  start – end time, client, location, worker and live status (Signed in, Not
+  signed in, Upcoming, Draft, Unfilled). Click a card to see the details in a
+  pop-up, or *Assign shift* to add a shift on that day.
 
-**Shift pop-up**: choose the client (its service location and care plans
-appear), the time and, if known, the worker. Leave the worker empty to save an
+**Shift pop-up**: choose the client (its service location fills *Location*, which
+you can still change before publishing; its care plans appear), the time and,
+if known, the worker. Leave the worker empty to save an
 **unfilled** shift. *Save draft* keeps it unpublished; *Publish* checks it and
 notifies the worker. If publishing is blocked, the draft is kept and the reason shown.
 

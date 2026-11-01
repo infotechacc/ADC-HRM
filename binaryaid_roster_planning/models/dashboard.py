@@ -25,6 +25,10 @@ class HrmsDashboard(models.AbstractModel):
                 'fa-check-square-o', 'blue', _('Ended shifts awaiting approval'))
         return specs
 
+    def _enrich_day_rows(self, rows, shifts):
+        super()._enrich_day_rows(rows, shifts)
+        self._attendance_status(rows, fields.Datetime.now())
+
     def _attendance_status(self, rows, now):
         if not rows or not self._can_read('hr.attendance'):
             return
@@ -68,7 +72,5 @@ class HrmsDashboard(models.AbstractModel):
             for item in schedule['shifts']:
                 item['unpaid_break_minutes'] = by_id[item['id']].unpaid_break_minutes
                 item['break_instructions'] = by_id[item['id']].break_instructions or ''
-        if data.get('today'):
-            self._attendance_status(data['today']['rows'], fields.Datetime.now())
         data['presence'] = self._own_presence()
         return data

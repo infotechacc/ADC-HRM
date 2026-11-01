@@ -263,8 +263,9 @@ class TestCareGaps(CareCase):
         self.assertEqual(cards['unfilled'], 1)
         self.assertNotIn('attention', data)
         self.assertEqual(name_parts('[DEMO] Mei Lin Zhang'), ['Mei', 'Lin', 'Zhang'])
-        chips = [c for day in data['coverage']['days'] for c in day['items'] if c['id'] == shift.id]
-        self.assertTrue(chips and chips[0]['unfilled'] and chips[0]['client'] == self.client.name)
+        card = next(r for r in dashboard.day_board(str(shift.start.date()))['rows'] if r['id'] == shift.id)
+        self.assertTrue(card['unfilled'] and card['client'] == self.client.name)
+        self.assertEqual(card['location'], '14 George St, Parramatta')
         self.assertEqual(dashboard.item_action('shift', shift.id, 'open')['views'][0][0],
                          self.env.ref('binaryaid_care.view_shift_quick_form').id)
         with self.assertRaises(ValidationError):
