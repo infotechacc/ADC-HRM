@@ -2,9 +2,6 @@ from odoo import api, fields, models, _
 from odoo.exceptions import AccessError
 from odoo.tools import format_date
 
-ATTENTION_LIMIT = 8
-
-
 class HrmsDashboard(models.AbstractModel):
     _name = 'binaryaid.hrms.dashboard'
     _description = 'HRMS Dashboard'
@@ -42,7 +39,7 @@ class HrmsDashboard(models.AbstractModel):
         return [('company_id', '=', self.env.company.id), ('state', 'in', ['confirm', 'validate1'])]
 
     def _specifications(self):
-        """Server-owned drilldown definitions; counts, attention lists and actions share the domains.
+        """Server-owned drilldown definitions; figures and the lists they open share the domains.
 
         Values: (model, label, domain, icon, tone, hint). Extensions add their own keys.
         """
@@ -80,60 +77,6 @@ class HrmsDashboard(models.AbstractModel):
                     'timesheets', 'documents', 'recruitment']
         return ['work_today', 'work_open', 'work_done', 'leave']
 
-    # ------------------------------------------------------------------
-    # Attention inbox: bounded lists of records that need a decision.
-    # Each item exposes only named actions that item_action() re-validates.
-    # ------------------------------------------------------------------
-    def _attention_tabs(self, specs):
-        tabs = []
-        if 'leave' in specs and self._can_approve_leave():
-            tabs.append(self._leave_tab(specs['leave'][2]))
-        if 'documents' in specs:
-            tabs.append(self._document_tab(specs['documents'][2]))
-        return tabs
-
-    def _leave_tab(self, domain):
-        leaves = self.env['hr.leave'].search(domain, order='date_from, id', limit=ATTENTION_LIMIT)
-        items = []
-        for leave in leaves:
-            actions = []
-            if leave.can_approve or leave.can_validate:
-                actions.append({'name': 'approve', 'label': _('Approve'), 'style': 'success'})
-            if leave.can_refuse:
-                actions.append({'name': 'refuse', 'label': _('Refuse'), 'style': 'danger'})
-            actions.append({'name': 'open', 'label': _('Review'), 'style': 'link'})
-            items.append({
-                'source': 'leave', 'id': leave.id, 'title': leave.employee_id.name,
-                'subtitle': leave.holiday_status_id.name,
-                'meta': '%s – %s · %s' % (format_date(self.env, leave.request_date_from, date_format='d MMM'),
-                                          format_date(self.env, leave.request_date_to, date_format='d MMM'),
-                                          leave.duration_display),
-                'tone': 'amber', 'warning': '', 'actions': actions,
-            })
-        return {'key': 'leave', 'label': _('Leave'), 'icon': 'fa-calendar-minus-o',
-                'count': self.env['hr.leave'].search_count(domain), 'items': items,
-                'empty': _('No leave requests are waiting for you.')}
-
-    def _document_tab(self, domain):
-        today = fields.Date.context_today(self)
-        employees = self.env['hr.employee'].search(domain, limit=ATTENTION_LIMIT)
-        items = []
-        for employee in employees:
-            dates = [(label, date) for label, date in ((_('Work permit'), employee.work_permit_expiration_date),
-                                                      (_('Visa'), employee.visa_expire)) if date]
-            label, date = min(dates, key=lambda pair: pair[1])
-            expired = date < today
-            items.append({
-                'source': 'document', 'id': employee.id, 'title': employee.name,
-                'subtitle': label,
-                'meta': (_('Expired %s') if expired else _('Expires %s')) % format_date(self.env, date),
-                'tone': 'red' if expired else 'amber', 'warning': '',
-                'actions': [{'name': 'open', 'label': _('Open profile'), 'style': 'link'}],
-            })
-        return {'key': 'documents', 'label': _('Documents'), 'icon': 'fa-id-card-o',
-                'count': self.env['hr.employee'].search_count(domain), 'items': items,
-                'empty': _('No visa or work permit expiries in the notice period.')}
-
     def _quick_actions(self, admin):
         """Create/review shortcuts that open as dialogs over the dashboard."""
         actions = []
@@ -152,55 +95,25 @@ class HrmsDashboard(models.AbstractModel):
         can_work = user.has_group('binaryaid_work_management.group_work_user')
         manager = user.has_group('binaryaid_work_management.group_work_admin')
         admin = self._is_admin()
-        hour = fields.Datetime.context_timestamp(self, fields.Datetime.now()).hour
         data = {
             'user_name': user.name, 'company_name': self.env.company.name,
-            'greeting': _('Good morning') if hour < 12 else _('Good afternoon') if hour < 18 else _('Good evening'),
             'today_label': format_date(self.env, today, date_format='EEEE, d MMMM y'),
-            'month_label': format_date(self.env, today, date_format='MMMM y'),
-            'manager': manager, 'admin': admin, 'can_work': can_work, 'has_employee': False,
-            'cards': [], 'recent_work': [], 'attention': [],
+            'manager': manager, 'admin': admin, 'can_work': can_work,
+            'cards': [],
             'quick_actions': self._quick_actions(admin),
-            'month_total': 0, 'month_done': 0, 'completion_percent': 0,
             'shortcuts': [{'key': 'discuss', 'label': _('Team messages'), 'icon': 'fa-comments-o'}],
         }
         for key in [key for key in self._card_keys(admin) if key in specs]:
             model, label, domain, icon, tone, hint = specs[key]
             data['cards'].append({'key': key, 'label': label, 'value': self.env[model].search_count(domain),
                                   'icon': icon, 'color': tone, 'hint': hint})
-        if admin:
-            data['attention'] = self._attention_tabs(specs)
         if 'hr.leave' in self.env and user.employee_id and not admin:
             data['my_leave'] = self._own_leave()
             data['shortcuts'].append({'key': 'my_leave', 'label': _('My leave'), 'icon': 'fa-calendar-minus-o'})
-        if admin and 'employees' in specs:
-            data['shortcuts'].append({'key': 'employees', 'label': _('Employees'), 'icon': 'fa-users'})
         data['shortcuts'].append({'key': 'profile', 'label': _('My profile'), 'icon': 'fa-user-circle-o'})
-        if not can_work:
-            return data
-        data['has_employee'] = bool(self.env['binaryaid.work.employee'].search_count([
-            ('user_id', '=', user.id), ('company_id', '=', self.env.company.id)], limit=1))
-        if data['has_employee']:
+        if can_work and self.env['binaryaid.work.employee'].search_count([
+                ('user_id', '=', user.id), ('company_id', '=', self.env.company.id)], limit=1):
             data['shortcuts'].insert(0, {'key': 'my_work', 'label': _('My Work History'), 'icon': 'fa-list-alt'})
-        if manager:
-            data['shortcuts'].insert(0, {'key': 'employee_work', 'label': _('Employee Work'), 'icon': 'fa-users'})
-            data['shortcuts'].insert(1, {'key': 'history', 'label': _('Daily Work History'), 'icon': 'fa-history'})
-        domain = self._work_domain()
-        month = fields.Date.start_of(today, 'month')
-        groups = self.env['project.task']._read_group(
-            domain + [('binaryaid_work_date', '>=', month), ('binaryaid_work_date', '<', fields.Date.add(month, months=1))],
-            ['state'], ['__count'])
-        data['month_total'] = sum(count for state, count in groups)
-        data['month_done'] = sum(count for state, count in groups if state == '1_done')
-        if data['month_total']:
-            data['completion_percent'] = round(100 * data['month_done'] / data['month_total'])
-        tasks = self.env['project.task'].search(domain, order='binaryaid_work_date desc, id desc', limit=6)
-        for task in tasks:
-            data['recent_work'].append({
-                'id': task.id, 'name': task.name, 'employee': task.binaryaid_employee_id.name if manager else '',
-                'date': format_date(self.env, task.binaryaid_work_date), 'done': task.state == '1_done',
-                'status': _('Completed') if task.state == '1_done' else _('In progress'),
-            })
         return data
 
     def _own_leave_domain(self):
@@ -232,9 +145,6 @@ class HrmsDashboard(models.AbstractModel):
             return self.env['ir.actions.actions']._for_xml_id('hr_holidays.hr_leave_action_new_request')
         if key == 'my_work' and user.has_group('binaryaid_work_management.group_work_user'):
             return self.env['binaryaid.work.employee'].action_my_work()
-        if key in ('employee_work', 'history') and user.has_group('binaryaid_work_management.group_work_admin'):
-            xmlid = 'action_work_employees' if key == 'employee_work' else 'action_work_history'
-            return self.env['ir.actions.actions']._for_xml_id('binaryaid_work_management.' + xmlid)
         if key not in specs:
             raise AccessError(_('You do not have access to this dashboard section.'))
         model, label, domain = specs[key][:3]
@@ -268,25 +178,17 @@ class HrmsDashboard(models.AbstractModel):
                 'res_id': record.id, 'views': [(view, 'form')], 'target': 'new'}
 
     def _attention_record(self, source, res_id):
-        """Re-find an inbox record through the same server-owned domain that listed it."""
+        """Re-find a record the dashboard listed, through the same server-owned domain."""
         if source == 'my_leave' and 'hr.leave' in self.env:
             leave = self.env['hr.leave'].search(self._own_leave_domain() + [('id', '=', res_id)], limit=1)
             if not leave:
                 raise AccessError(_('This leave request is not available to you.'))
             return leave
-        specs = self._specifications()
-        key = {'leave': 'leave', 'document': 'documents'}.get(source)
-        if key not in specs or (source == 'leave' and not self._can_approve_leave()):
-            raise AccessError(_('This item is not available on your dashboard.'))
-        model, label, domain = specs[key][:3]
-        record = self.env[model].search(domain + [('id', '=', res_id)], limit=1)
-        if not record:
-            raise AccessError(_('This item is no longer waiting on your dashboard. Refresh to update it.'))
-        return record
+        raise AccessError(_('This item is not available on your dashboard.'))
 
     @api.model
     def item_action(self, source, res_id, name):
-        """Run an inline inbox action. Returns an action to open, or True after a direct change."""
+        """Run a dashboard row action. Returns an action to open, or True after a direct change."""
         self._check_user()
         record = self._attention_record(source, res_id)
         if name == 'open':
@@ -295,22 +197,4 @@ class HrmsDashboard(models.AbstractModel):
             if not record.can_cancel:
                 raise AccessError(_('This leave request can no longer be cancelled here. Contact your coordinator.'))
             return record.action_cancel()
-        if source == 'leave' and name == 'approve':
-            record.action_approve()
-            return True
-        if source == 'leave' and name == 'refuse':
-            record.action_refuse()
-            return True
         raise AccessError(_('This action is not available for this item.'))
-
-    @api.model
-    @api.readonly
-    def open_work(self, task_id):
-        self._check_user()
-        if not self.env.user.has_group('binaryaid_work_management.group_work_user'):
-            raise AccessError(_('You do not have access to Work Management.'))
-        task = self.env['project.task'].search(self._work_domain() + [('id', '=', task_id)], limit=1)
-        if not task:
-            raise AccessError(_('This work item is not available to you.'))
-        return {'type': 'ir.actions.act_window', 'name': task.name, 'res_model': 'project.task',
-                'res_id': task.id, 'views': [(self.env.ref('binaryaid_work_management.view_work_form').id, 'form')]}

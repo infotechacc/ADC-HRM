@@ -7,7 +7,7 @@ from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
 
 @tagged('post_install', '-at_install')
 class TestDashboardOperations(TransactionCase):
-    """Administrator dashboard figures, inbox lists and inline actions."""
+    """Administrator dashboard figures, today's board, calendar and dialogs."""
 
     @classmethod
     def setUpClass(cls):
@@ -28,81 +28,53 @@ class TestDashboardOperations(TransactionCase):
 
     def overview(self, user=None):
         data = self.dashboard.with_user(user or self.admin).with_context(tz='UTC').get_overview()
-        return data, {card['key']: card['value'] for card in data['cards']}, {tab['key']: tab for tab in data['attention']}
+        return data, {card['key']: card['value'] for card in data['cards']}
 
     def test_admin_today_board_and_publication(self):
         now = fields.Datetime.now()
-        _data, before, before_tabs = self.overview()
+        _data, before = self.overview()
         running = self.shift(self.employee, now - timedelta(minutes=30), now + timedelta(hours=2))
         running.action_publish()
         self.env['hr.attendance'].create({'employee_id': self.employee.id, 'check_in': now - timedelta(minutes=25)})
         draft = self.shift(self.other, now + timedelta(days=2), now + timedelta(days=2, hours=4), name='Draft ops')
-        data, cards, tabs = self.overview()
+        data, cards = self.overview()
         self.assertTrue(data['admin'])
+        self.assertNotIn('attention', data)
+        self.assertNotIn('recent_work', data)
         self.assertEqual(cards['shifts_today'], before['shifts_today'] + 1)
-        self.assertEqual(tabs['unpublished']['count'], before_tabs['unpublished']['count'] + 1)
         self.assertEqual(len(data['coverage']['days']), 14)
         row = next(r for r in data['today']['rows'] if r['id'] == running.id)
         self.assertEqual(row['status'], 'on_shift')
-        self.assertIn(draft.id, [item['id'] for item in tabs['unpublished']['items']])
+        chips = [c['id'] for day in data['coverage']['days'] for c in day['items']]
+        self.assertIn(draft.id, chips)
         self.assertTrue({'create_shift', 'add_employee'}.issubset({a['key'] for a in data['quick_actions']}))
         dashboard = self.dashboard.with_user(self.admin)
         self.assertEqual(dashboard.item_action('shift', draft.id, 'open')['target'], 'new')
-        self.assertTrue(dashboard.item_action('shift', draft.id, 'publish'))
-        self.assertEqual(draft.state, 'published')
-        self.assertEqual(self.overview()[2]['unpublished']['count'], before_tabs['unpublished']['count'])
+        with self.assertRaises(AccessError):
+            dashboard.item_action('shift', draft.id, 'publish')
+        self.assertEqual(dashboard.open_section('work_schedule')['view_mode'].split(',')[0], 'list')
         action = dashboard.with_context(tz='Australia/Sydney').quick_action('create_shift', '2027-01-11')
         self.assertEqual(action['target'], 'new')
         self.assertEqual(action['context']['default_start'], '2027-01-10 22:00:00')
 
-    def test_missing_signout_and_timesheet_review(self):
+    def test_missing_signout_figure(self):
         now = fields.Datetime.now()
-        attendance = self.env['hr.attendance'].create({'employee_id': self.other.id, 'check_in': now - timedelta(hours=10)})
-        ended = self.shift(self.employee, now - timedelta(hours=9), now - timedelta(hours=1))
-        ended._roster_transition_write({'state': 'published', 'published_at': now - timedelta(days=1)})
-        data, cards, tabs = self.overview()
-        self.assertIn(attendance.id, [item['id'] for item in tabs['missing_signout']['items']])
-        self.assertGreaterEqual(cards['missing_signout'], 1)
-        dashboard = self.dashboard.with_user(self.admin)
-        # The fortnightly timesheet add-on replaces per-shift reconciliation as the review queue.
-        if 'binaryaid.care.timesheet' not in self.env:
-            self.assertIn(ended.id, [item['id'] for item in tabs['timesheets']['items']])
-            self.assertGreaterEqual(cards['timesheets'], 1)
-            self.assertEqual(dashboard.item_action('timesheet', ended.id, 'reconcile')['res_model'], 'binaryaid.roster.actual.wizard')
-        self.assertEqual(dashboard.item_action('attendance', attendance.id, 'open')['res_model'], 'hr.attendance')
-        attendance.check_out = now
-        with self.assertRaises(AccessError):
-            dashboard.item_action('attendance', attendance.id, 'open')
-
-    def test_leave_inbox_flags_roster_conflicts(self):
-        start = fields.Datetime.now() + timedelta(days=3)
-        shift = self.shift(self.employee, start.replace(hour=9, minute=0, second=0), start.replace(hour=17, minute=0, second=0))
-        shift.action_publish()
-        leave_type = self.env['hr.leave.type'].create({'name': 'Ops leave', 'requires_allocation': False,
-                                                      'leave_validation_type': 'hr'})
-        day = start.date()
-        conflicting = self.env['hr.leave'].create({'holiday_status_id': leave_type.id, 'employee_id': self.employee.id,
-                                                   'request_date_from': day, 'request_date_to': day})
-        free = self.env['hr.leave'].create({'holiday_status_id': leave_type.id, 'employee_id': self.other.id,
-                                            'request_date_from': day, 'request_date_to': day})
-        items = {item['id']: item for item in self.overview()[2]['leave']['items']}
-        self.assertTrue(items[conflicting.id]['warning'])
-        self.assertNotIn('approve', [a['name'] for a in items[conflicting.id]['actions']])
-        self.assertIn('approve', [a['name'] for a in items[free.id]['actions']])
-        self.assertTrue(self.dashboard.with_user(self.admin).item_action('leave', free.id, 'approve'))
-        self.assertEqual(free.state, 'validate')
+        _data, before = self.overview()
+        self.env['hr.attendance'].create({'employee_id': self.other.id, 'check_in': now - timedelta(hours=10)})
+        _data, cards = self.overview()
+        self.assertEqual(cards['missing_signout'], before['missing_signout'] + 1)
+        self.assertEqual(self.dashboard.with_user(self.admin).open_section('missing_signout')['res_model'], 'hr.attendance')
 
     def test_worker_cannot_use_admin_actions(self):
         now = fields.Datetime.now()
         draft = self.shift(self.employee, now + timedelta(days=1), now + timedelta(days=1, hours=4))
-        data, cards, tabs = self.overview(self.alice)
+        data, cards = self.overview(self.alice)
         self.assertFalse(data['admin'])
         self.assertFalse(data['today'])
-        self.assertFalse(tabs)
         self.assertNotIn('unpublished', cards)
         self.assertIn('presence', data)
         dashboard = self.dashboard.with_user(self.alice)
-        for source, name in (('shift', 'publish'), ('shift', 'open'), ('timesheet', 'reconcile'), ('leave', 'approve')):
+        for source, name in (('shift', 'open'), ('leave', 'approve')):
             with self.assertRaises(AccessError):
                 dashboard.item_action(source, draft.id, name)
         with self.assertRaises(AccessError):
@@ -112,7 +84,7 @@ class TestDashboardOperations(TransactionCase):
 
 @tagged('post_install', '-at_install')
 class TestDashboardOperationsUI(HttpCase):
-    def test_admin_inline_publish_and_dialogs(self):
+    def test_admin_dashboard_dialogs(self):
         admin = new_test_user(self.env, login='ops_ui_admin', tz='UTC', groups=','.join([
             'binaryaid_work_management.group_work_admin', 'hr.group_hr_user',
             'hr_attendance.group_hr_attendance_manager', 'hr_holidays.group_hr_holidays_user']))
@@ -120,7 +92,7 @@ class TestDashboardOperationsUI(HttpCase):
         employee = self.env['hr.employee'].create({'name': 'Dialog Worker', 'user_id': user.id})
         now = fields.Datetime.now()
         draft = self.env['binaryaid.work.shift'].with_user(admin).create({
-            'name': 'Inline publish shift', 'employee_id': employee.id, 'timezone': 'UTC',
+            'name': 'Dialog shift', 'employee_id': employee.id, 'timezone': 'UTC',
             'start': now + timedelta(days=2), 'end': now + timedelta(days=2, hours=4)})
         self.browser_js('/odoo', """
           (async () => {
@@ -133,13 +105,15 @@ class TestDashboardOperationsUI(HttpCase):
                 throw new Error('Timed out: ' + label);
             };
             const byText = (selector, text) => [...document.querySelectorAll(selector)].find(el => el.textContent.includes(text));
-            await wait(() => document.querySelector('.ba_inbox'), 'attention inbox');
-            const draftsTab = await wait(() => document.querySelector('[data-tab="unpublished"]'), 'drafts tab');
-            if (draftsTab.getAttribute('aria-expanded') !== 'true') draftsTab.click();
-            const item = await wait(() => byText('.ba_inbox_item', 'Inline publish shift'), 'draft in inbox');
-            item.querySelector('.ba_act_success').click();
-            await wait(() => !byText('.ba_inbox_item', 'Inline publish shift'), 'draft removed after publish');
-            await wait(() => byText('.o_notification', 'Publish'), 'success notification');
+            await wait(() => document.querySelector('.ba_metrics'), 'dashboard figures');
+            for (const gone of ['.ba_inbox', '.ba_goto', '.ba_side', '.ba_work_table', '.ba_account_btn']) {
+                if (document.querySelector(gone)) throw new Error('Removed section still shown: ' + gone);
+            }
+            if (byText('.ba_header button', 'Review requests')) throw new Error('Review requests still shown');
+            (await wait(() => byText('.ba_cal_item', 'Dialog'), 'draft in calendar')).click();
+            await wait(() => document.querySelector('.o_dialog .o_form_view'), 'shift dialog');
+            document.querySelector('.o_dialog .btn-close').click();
+            await wait(() => !document.querySelector('.o_dialog'), 'shift dialog closed');
             byText('.ba_header button', 'Create shift').click();
             await wait(() => document.querySelector('.o_dialog .o_form_view'), 'create shift dialog');
             document.querySelector('.o_dialog .btn-close, .o_dialog .o_form_button_cancel').click();
@@ -150,4 +124,4 @@ class TestDashboardOperationsUI(HttpCase):
             console.log('test successful');
           })().catch(error => console.error(error));
         """, login=admin.login, timeout=90)
-        self.assertEqual(draft.state, 'published')
+        self.assertEqual(draft.state, 'draft')

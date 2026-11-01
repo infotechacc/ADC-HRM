@@ -114,42 +114,37 @@ class TestCareTimesheet(TransactionCase):
         self.assertFalse(self.env['binaryaid.care.timesheet'].with_user(self.other_user).search([]))
 
     def test_dashboard_queue(self):
-        sheet = self.generate()
-        data = self.env['binaryaid.hrms.dashboard'].with_user(self.admin).get_overview()
-        tab = next(t for t in data['attention'] if t['key'] == 'timesheets')
-        self.assertIn(sheet.id, [i['id'] for i in tab['items']])
-        action = self.env['binaryaid.hrms.dashboard'].with_user(self.admin).item_action('timesheet', sheet.id, 'open')
-        self.assertEqual(action['res_id'], sheet.id)
+        board = self.env['binaryaid.hrms.dashboard'].with_user(self.admin)
+        figure = lambda: {c['key']: c['value'] for c in board.get_overview()['cards']}['timesheets']
+        before = figure()
+        self.generate()
+        self.assertEqual(figure(), before + 1)
+        self.assertEqual(board.open_section('timesheets')['res_model'], 'binaryaid.care.timesheet')
 
 
 @tagged('post_install', '-at_install')
 class TestCareEndToEnd(TransactionCase):
-    """Task 17: request → assignment → attendance → note → timesheet, across all care modules."""
+    """Task 17: shift → assignment → attendance → note → timesheet, across all care modules."""
 
     def test_full_flow(self):
         admin = new_test_user(self.env, login='e2e_admin', tz='UTC', groups=','.join([
             'binaryaid_work_management.group_work_admin', 'hr.group_hr_user']))
         worker_user = new_test_user(self.env, login='e2e_worker', tz='UTC', groups='binaryaid_work_management.group_work_user')
         worker = self.env['hr.employee'].create({'name': 'E2E Worker', 'user_id': worker_user.id})
-        client = self.env['binaryaid.care.client'].create({'name': 'E2E Client', 'reference': 'E2E-1', 'location_ids': [
-            (0, 0, {'name': 'Home', 'latitude': -33.8688, 'longitude': 151.2093, 'timezone': 'UTC'})]})
-        client.location_ids.action_verify_coordinates()
-        # 1. The client's representative submits a request (portal path covered in binaryaid_care tests).
-        request = self.env['binaryaid.care.client.request'].create({
-            'client_id': client.id, 'support_needs': 'Morning support', 'location_id': client.location_ids.id,
-            'preferred_date_from': fields.Date.today()})
+        # 1. Admin adds the client with its service location from the client form.
+        client = self.env['binaryaid.care.client'].with_user(admin).create({
+            'name': 'E2E Client', 'service_location': 'Home', 'latitude': -33.8688, 'longitude': 151.2093, 'timezone': 'UTC'})
+        # 2. Admin creates an unfilled shift from the dashboard, assigns a worker and publishes.
         board = self.env['binaryaid.hrms.dashboard'].with_user(admin)
-        board.item_action('request', request.id, 'approve')
-        # 2. Admin creates an unfilled shift from the request, assigns a worker and publishes.
-        context = board.item_action('request', request.id, 'create_shift')['context']
+        context = board.quick_action('create_shift')['context']
         now = fields.Datetime.now().replace(microsecond=0)
         context.update(default_start=fields.Datetime.to_string(now - timedelta(minutes=5)),
                        default_end=fields.Datetime.to_string(now + timedelta(hours=3)))
-        shift = self.env['binaryaid.work.shift'].with_user(admin).with_context(**context).create({})
+        shift = self.env['binaryaid.work.shift'].with_user(admin).with_context(**context).create({
+            'name': 'Morning support', 'client_id': client.id, 'service_location_id': client.location_ids.id})
         self.assertTrue(shift.is_unfilled)
         shift.employee_id = worker
         shift.action_publish()
-        self.assertEqual(request.state, 'scheduled')
         # 3. Worker signs in on site, reports an incident and signs out with the shift note.
         worker_board = self.env['binaryaid.hrms.dashboard'].with_user(worker_user)
         self.assertEqual(worker_board.get_overview()['clock']['action'], 'in')

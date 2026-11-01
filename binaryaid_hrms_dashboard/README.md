@@ -12,11 +12,9 @@ Work users see their own work. Work admins see work in the active company. Emplo
 counts require HR Officer access. Attendance, Time Off and Recruitment cards are
 included only when their models are installed and readable. All counts, grouped
 aggregates and drilldowns use the current user's ORM access and company scope;
-no business data is read with sudo. Recent lists are bounded. Dashboard data is
+no business data is read with sudo. Dashboard data is
 loaded on entry and on Refresh, not continuously polled.
 
-Monthly completion uses Work Date, including backdated work, and the current task
-status. Full daily history remains accessible through Work Management.
 Native public employee identity lookups remain unaffected. Employees without Work
 Management access can still land here and see permitted summaries and Discuss.
 
@@ -24,35 +22,32 @@ Optional applications are not installed automatically. Future metrics should add
 server-owned specifications with the same domain for their count and drilldown.
 The session extension and client action registry should be revalidated on Odoo
 major upgrades. Tests cover own-work isolation, denied drilldowns, company scope,
-backdating, no-role/portal access, and the session's landing action.
+no-role/portal access, and the session's landing action.
 
-## Operations dashboard (19.0.1.2.0)
+## Operations dashboard (19.0.1.5.0)
 
 Follows task 02 (central dashboard) and task 08 (worker home screen) of the ADC
-HRMS task list. One client action renders two role-aware layouts.
+HRMS task list. One client action renders two role-aware layouts, kept simple:
+there are no action item, go to, recent work item or My account sections.
 
 **Administrators** (Work Management administrators or HR officers):
-- Quick actions in the header open dialogs over the dashboard: Create shift, Add employee. Dialogs refresh the figures when closed.
-- Metric strip: today's shifts, working now, unpublished shifts, missing sign-outs, leave to review, timesheet reviews and document alerts. Alert figures are highlighted. Selecting a metric opens its inbox tab, or its list.
-- Today's shifts with attendance status (signed in / not signed in / upcoming / draft / completed) and filter chips. A row opens the shift in a dialog.
-- 14-day planner (two calendar weeks from Monday, until ADC confirms the fortnight anchor) with published and draft counts. Selecting a future day opens a new 09:00–17:00 draft shift on that date; every value stays editable.
-- Needs attention inbox with inline actions: publish drafts, approve or refuse leave, correct missing sign-outs, open timesheet reconciliation, open profiles with expiring visas or work permits. Leave that overlaps published shifts is flagged and cannot be approved inline until the roster is resolved (task 13).
+- Quick actions in the header open dialogs over the dashboard: Create shift, Add client, Add employee. Dialogs refresh the figures when closed.
+- Figures: today's shifts, working now, unfilled shifts, missing sign-outs, clock exceptions, leave to review, timesheet reviews. Alert figures are highlighted. Selecting a figure opens its list.
+- Today's shifts with attendance status and filter chips. A row opens the shift in a dialog.
+- 14-day calendar of shifts. Selecting a future day opens a new 09:00–17:00 draft shift on that date; every value stays editable.
 
-**Workers**: current or next shift banner with sign-in status, large links
-(shift calendar, work history, team messages, leave, profile), Request leave
-dialog, the employee's own published 14-day roster, then personal figures.
+**Workers**: Check In and Check Out buttons (both always shown, only the one that
+applies is enabled), current or next shift, large links (My shifts, Incident forms,
+Team messages, Leave, My profile), Request leave, the employee's own published
+14-day roster, team messages and leave.
 
-Every inline action goes through `item_action(source, id, name)`. The server
-finds the record again through the same domain that listed it, then runs the
-standard Odoo method as the current user (`action_publish`, `action_approve`,
-`action_refuse`, …), so normal access rights and validation apply. Validation
-errors are shown as notifications and drafts stay unchanged. Lists are bounded
-to 8 items per tab with a View all link. Overview cards never show care notes,
-shift instructions or incident details.
+Shift rows and own-leave cancellation go through `item_action(source, id, name)`:
+the server finds the record again through a server-owned domain and runs the
+standard Odoo method as the current user. Figures never show care notes, shift
+instructions or incident details.
 
-Document alerts use Odoo's native visa and work permit expiry dates with the
-company's work permit notice period. They will move to the five ADC worker
-document categories once those categories exist (task 05).
+Every form in the system shows labelled **Save** and **Cancel** buttons instead of
+Odoo's icon-only buttons (`static/src/form_buttons.xml`).
 
 The Scheduling and Roster Planning add-ons add their data to `get_overview`.
-They no longer use template extensions. Upgrade all three modules together.
+Upgrade the modules together.

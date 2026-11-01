@@ -40,12 +40,16 @@ class TestDashboardUI(HttpCase):
         with patch.object(ChromeBrowser, '_wait_code_ok', check_and_capture):
             self.browser_js('/odoo', """
               (async () => {
-                for (let i = 0; i < 200 && !document.querySelector('.ba_work_table'); i++) {
+                const shown = () => document.querySelector('.ba_dashboard')?.textContent.includes('Operations & team support');
+                for (let i = 0; i < 200 && !shown(); i++) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
                 const dashboard = document.querySelector('.ba_dashboard');
-                if (!dashboard || !dashboard.textContent.includes('Review onboarding documents')) {
-                    throw new Error('Work items did not load');
+                if (!shown()) {
+                    throw new Error('The shift did not load');
+                }
+                if (dashboard.querySelector('.ba_work_table') || dashboard.textContent.includes('Review onboarding documents')) {
+                    throw new Error('Recent work items are still shown');
                 }
                 if (!dashboard.querySelector('.ba_card')) {
                     throw new Error('Dashboard panels are missing');

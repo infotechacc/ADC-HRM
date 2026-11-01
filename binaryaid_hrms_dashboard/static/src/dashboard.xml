@@ -38,10 +38,9 @@
                     <div class="ba_header_actions">
                         <t t-foreach="d.quick_actions" t-as="qa" t-key="qa.key">
                             <button type="button" t-att-class="'btn ' + (qa.primary ? 'btn-primary' : 'btn-secondary')" t-on-click="() => this.quick(qa.key)">
-                                <t t-esc="qa.label"/><span t-if="qa.key === 'tab:client_requests' and cardValue('client_requests')" class="badge rounded-pill text-bg-danger ms-2" t-esc="cardValue('client_requests')"/>
+                                <t t-esc="qa.label"/>
                             </button>
                         </t>
-                        <button t-if="d.account_url" type="button" class="btn btn-secondary ba_account_btn" t-on-click="openAccount"><i class="fa fa-user-circle-o me-2" aria-hidden="true"/>My account</button>
                         <button type="button" class="btn btn-light ba_refresh" t-on-click="load" t-att-disabled="state.loading" title="Refresh" aria-label="Refresh"><i t-att-class="'fa fa-refresh' + (state.loading ? ' fa-spin' : '')" aria-hidden="true"/></button>
                     </div>
                 </header>
@@ -49,114 +48,61 @@
                 <div class="ba_body">
                     <t t-call="binaryaid_hrms_dashboard.Metrics"/>
 
-                    <div class="ba_columns">
-                        <main class="ba_main" aria-label="Schedule">
-                            <section t-if="d.today" class="ba_card" t-ref="today">
-                                <div class="ba_card_header">
-                                    <h2>Today <span class="ba_count" t-esc="d.today.rows.length"/></h2>
-                                    <div t-if="d.today.rows.length" class="btn-group btn-group-sm ba_segmented" role="group" aria-label="Filter today's shifts">
-                                        <button t-foreach="todayFilters" t-as="filter" t-key="filter.key" type="button"
-                                                t-att-class="'btn ' + (state.todayFilter === filter.key ? 'btn-secondary active' : 'btn-light')"
-                                                t-att-aria-pressed="state.todayFilter === filter.key ? 'true' : 'false'"
-                                                t-on-click="() => state.todayFilter = filter.key"><t t-esc="filter.label"/> <span class="ba_seg_count" t-esc="filterCount(filter)"/></button>
-                                    </div>
-                                    <button type="button" class="btn btn-link ms-auto" t-on-click="() => this.openSection('work_schedule')">Open calendar</button>
+                    <main class="ba_main" aria-label="Schedule">
+                        <section t-if="d.today" class="ba_card" t-ref="today">
+                            <div class="ba_card_header">
+                                <h2>Today <span class="ba_count" t-esc="d.today.rows.length"/></h2>
+                                <div t-if="d.today.rows.length" class="btn-group btn-group-sm ba_segmented" role="group" aria-label="Filter today's shifts">
+                                    <button t-foreach="todayFilters" t-as="filter" t-key="filter.key" type="button"
+                                            t-att-class="'btn ' + (state.todayFilter === filter.key ? 'btn-secondary active' : 'btn-light')"
+                                            t-att-aria-pressed="state.todayFilter === filter.key ? 'true' : 'false'"
+                                            t-on-click="() => state.todayFilter = filter.key"><t t-esc="filter.label"/> <span class="ba_seg_count" t-esc="filterCount(filter)"/></button>
                                 </div>
-                                <div t-if="!d.today.rows.length" class="ba_empty">No shifts are rostered for today. <button type="button" class="btn btn-link p-0 align-baseline" t-on-click="() => this.quick('create_shift')">Add a shift</button></div>
-                                <div t-else="" class="table-responsive">
-                                    <table class="table table-sm table-hover ba_table mb-0">
-                                        <thead><tr><th class="ba_col_time">Time</th><th class="ba_col_worker">Worker</th><th class="ba_col_client">Client · shift</th><th class="ba_col_place">Location</th><th class="ba_col_status">Status</th></tr></thead>
-                                        <tbody>
-                                            <tr t-if="!todayRows.length"><td colspan="5" class="text-muted py-3">No shifts match this filter.</td></tr>
-                                            <tr t-foreach="todayRows" t-as="row" t-key="row.id" class="ba_click" t-on-click="() => this.openShift(row.id, row.employee)">
-                                                <td class="ba_col_time ba_num" t-esc="row.time_label"/>
-                                                <td class="text-nowrap"><span t-att-class="'ba_avatar' + (row.status === 'unfilled' ? ' is_unfilled' : '')" t-att-style="row.status === 'unfilled' ? '' : '--av:' + colorFor(row.employee)" aria-hidden="true" t-esc="row.initials"/><span t-att-class="row.status === 'unfilled' ? 'text-danger fw-semibold' : 'fw-semibold'" t-esc="row.employee"/></td>
-                                                <td class="ba_truncate"><t t-if="row.client"><t t-esc="row.client"/><span class="text-muted"> · </span></t><span class="text-muted" t-esc="row.name"/></td>
-                                                <td class="ba_col_place ba_truncate text-muted" t-esc="row.location"/>
-                                                <td class="ba_col_status"><t t-call="binaryaid_hrms_dashboard.Status"><t t-set="tone" t-value="row.tone"/><t t-set="label" t-value="row.status_label"/></t></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <p t-if="d.today.limited" class="ba_footnote">Showing the first 60 shifts.</p>
-                            </section>
-
-                            <section t-if="d.coverage" class="ba_card">
-                                <div class="ba_card_header">
-                                    <h2>Next 14 days</h2>
-                                    <span class="ba_card_sub" t-esc="d.coverage.period"/>
-                                    <span class="ba_legend ms-auto" aria-hidden="true"><span class="ba_key is_published"/>Published<span class="ba_key is_draft"/>Draft<span class="ba_key is_unfilled"/>Unfilled</span>
-                                </div>
-                                <div class="ba_calendar">
-                                    <div t-foreach="d.coverage.days" t-as="day" t-key="day.date" t-att-class="'ba_cal_day' + (day.today ? ' is_today' : '') + (day.past ? ' is_past' : '')">
-                                        <div class="ba_cal_head">
-                                            <span class="ba_cal_weekday" t-esc="day.label"/>
-                                            <span class="ba_cal_date"><t t-esc="day.number"/><t t-if="day_first or day.number === 1"> <t t-esc="day.month"/></t></span>
-                                            <button t-if="!day.past" type="button" class="btn btn-link ba_plan_day" t-on-click="() => this.onDayClick(day)" t-att-aria-label="'Add a shift on ' + day.date" title="Add shift"><i class="fa fa-plus" aria-hidden="true"/></button>
-                                        </div>
-                                        <button t-foreach="day.items.slice(0, calendarLimit)" t-as="item" t-key="item.id" type="button"
-                                                t-att-class="'ba_cal_item' + (item.unfilled ? ' is_unfilled' : item.state === 'draft' ? ' is_draft' : ' is_published')" t-att-style="item.unfilled ? '' : '--chip:' + colorFor(item.worker)"
-                                                t-on-click="() => this.openShift(item.id, item.title)" t-att-title="item.time + ' ' + (item.unfilled ? 'Unfilled' : item.worker) + (item.client ? ' · ' + item.client : '')">
-                                            <span class="ba_cal_line"><span class="ba_num" t-esc="item.time"/> <t t-esc="item.unfilled ? 'Unfilled' : item.worker"/></span>
-                                            <span t-if="item.client" class="ba_cal_client" t-esc="item.client"/>
-                                        </button>
-                                        <button t-if="day.items.length > calendarLimit" type="button" class="ba_cal_more" t-on-click="() => this.openSection('work_schedule')">+<t t-esc="day.items.length - calendarLimit"/> more</button>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section t-if="d.can_work and d.recent_work.length" class="ba_card">
-                                <div class="ba_card_header"><h2>Recent work items</h2><button t-if="d.manager or d.has_employee" type="button" class="btn btn-link ms-auto" t-on-click="() => this.openSection(d.manager ? 'employee_work' : 'my_work')">View all</button></div>
-                                <table class="table table-sm table-hover ba_table ba_work_table mb-0">
-                                    <thead><tr><th>Work item</th><th t-if="d.manager">Employee</th><th>Date</th><th class="ba_col_status">Status</th></tr></thead>
-                                    <tbody><tr t-foreach="d.recent_work" t-as="work" t-key="work.id" class="ba_click" t-on-click="() => this.openWork(work.id)">
-                                        <td class="ba_truncate fw-semibold" t-esc="work.name"/><td t-if="d.manager" class="text-muted" t-esc="work.employee"/><td class="text-muted text-nowrap" t-esc="work.date"/>
-                                        <td class="ba_col_status"><t t-call="binaryaid_hrms_dashboard.Status"><t t-set="tone" t-value="work.done ? 'green' : 'amber'"/><t t-set="label" t-value="work.status"/></t></td>
-                                    </tr></tbody>
+                                <button type="button" class="btn btn-link ms-auto" t-on-click="() => this.openSection('work_schedule')">All shifts</button>
+                            </div>
+                            <div t-if="!d.today.rows.length" class="ba_empty">No shifts are rostered for today. <button type="button" class="btn btn-link p-0 align-baseline" t-on-click="() => this.quick('create_shift')">Add a shift</button></div>
+                            <div t-else="" class="table-responsive">
+                                <table class="table table-sm table-hover ba_table mb-0">
+                                    <thead><tr><th class="ba_col_time">Time</th><th class="ba_col_worker">Worker</th><th class="ba_col_client">Client · shift</th><th class="ba_col_place">Location</th><th class="ba_col_status">Status</th></tr></thead>
+                                    <tbody>
+                                        <tr t-if="!todayRows.length"><td colspan="5" class="text-muted py-3">No shifts match this filter.</td></tr>
+                                        <tr t-foreach="todayRows" t-as="row" t-key="row.id" class="ba_click" t-on-click="() => this.openShift(row.id, row.employee)">
+                                            <td class="ba_col_time ba_num" t-esc="row.time_label"/>
+                                            <td class="text-nowrap"><span t-att-class="'ba_avatar' + (row.status === 'unfilled' ? ' is_unfilled' : '')" t-att-style="row.status === 'unfilled' ? '' : '--av:' + colorFor(row.employee)" aria-hidden="true" t-esc="row.initials"/><span t-att-class="row.status === 'unfilled' ? 'text-danger fw-semibold' : 'fw-semibold'" t-esc="row.employee"/></td>
+                                            <td class="ba_truncate"><t t-if="row.client"><t t-esc="row.client"/><span class="text-muted"> · </span></t><span class="text-muted" t-esc="row.name"/></td>
+                                            <td class="ba_col_place ba_truncate text-muted" t-esc="row.location"/>
+                                            <td class="ba_col_status"><t t-call="binaryaid_hrms_dashboard.Status"><t t-set="tone" t-value="row.tone"/><t t-set="label" t-value="row.status_label"/></t></td>
+                                        </tr>
+                                    </tbody>
                                 </table>
-                            </section>
-                        </main>
+                            </div>
+                            <p t-if="d.today.limited" class="ba_footnote">Showing the first 60 shifts.</p>
+                        </section>
 
-                        <aside class="ba_side" aria-label="Action items">
-                            <section t-if="d.attention.length" class="ba_card ba_inbox" t-ref="attention">
-                                <div class="ba_card_header"><h2>Action items <span t-if="attentionTotal" class="ba_count" t-esc="attentionTotal"/></h2></div>
-                                <div t-if="!openTabs.length" class="ba_empty">Nothing needs your attention.</div>
-                                <div t-foreach="openTabs" t-as="tab" t-key="tab.key" t-att-class="'ba_group' + (state.tab === tab.key ? ' is_open' : '')">
-                                    <button type="button" class="ba_group_head" t-att-data-tab="tab.key" t-att-aria-expanded="state.tab === tab.key ? 'true' : 'false'" t-on-click="() => this.selectTab(tab.key)">
-                                        <span t-att-class="'ba_icon_chip ba_tone_' + tabTone(tab.key)"><i t-att-class="'fa ' + tab.icon" aria-hidden="true"/></span>
-                                        <span class="ba_group_label" t-esc="tab.label"/>
-                                        <span t-att-class="'ba_count_pill ba_tone_' + tabTone(tab.key)" t-esc="tab.count"/>
-                                        <i t-att-class="'fa fa-fw ba_group_caret ' + (state.tab === tab.key ? 'fa-angle-up' : 'fa-angle-down')" aria-hidden="true"/>
+                        <section t-if="d.coverage" class="ba_card">
+                            <div class="ba_card_header">
+                                <h2>Next 14 days</h2>
+                                <span class="ba_card_sub" t-esc="d.coverage.period"/>
+                                <span class="ba_legend ms-auto" aria-hidden="true"><span class="ba_key is_published"/>Published<span class="ba_key is_draft"/>Draft<span class="ba_key is_unfilled"/>Unfilled</span>
+                            </div>
+                            <div class="ba_calendar">
+                                <div t-foreach="d.coverage.days" t-as="day" t-key="day.date" t-att-class="'ba_cal_day' + (day.today ? ' is_today' : '') + (day.past ? ' is_past' : '')">
+                                    <div class="ba_cal_head">
+                                        <span class="ba_cal_weekday" t-esc="day.label"/>
+                                        <span class="ba_cal_date"><t t-esc="day.number"/><t t-if="day_first or day.number === 1"> <t t-esc="day.month"/></t></span>
+                                        <button t-if="!day.past" type="button" class="btn btn-link ba_plan_day" t-on-click="() => this.onDayClick(day)" t-att-aria-label="'Add a shift on ' + day.date" title="Add shift"><i class="fa fa-plus" aria-hidden="true"/></button>
+                                    </div>
+                                    <button t-foreach="day.items.slice(0, calendarLimit)" t-as="item" t-key="item.id" type="button"
+                                            t-att-class="'ba_cal_item' + (item.unfilled ? ' is_unfilled' : item.state === 'draft' ? ' is_draft' : ' is_published')" t-att-style="item.unfilled ? '' : '--chip:' + colorFor(item.worker)"
+                                            t-on-click="() => this.openShift(item.id, item.title)" t-att-title="item.time + ' ' + (item.unfilled ? 'Unfilled' : item.worker) + (item.client ? ' · ' + item.client : '')">
+                                        <span class="ba_cal_line"><span class="ba_num" t-esc="item.time"/> <t t-esc="item.unfilled ? 'Unfilled' : item.worker"/></span>
+                                        <span t-if="item.client" class="ba_cal_client" t-esc="item.client"/>
                                     </button>
-                                    <ul t-if="state.tab === tab.key" class="ba_items">
-                                        <li t-foreach="tab.items" t-as="item" t-key="item.source + item.id" class="ba_inbox_item">
-                                            <div class="ba_item_text">
-                                                <span class="ba_item_title" t-esc="item.title"/>
-                                                <span class="ba_item_sub" t-esc="item.subtitle"/>
-                                                <span class="ba_item_meta" t-esc="item.meta"/>
-                                                <span t-if="item.warning" class="ba_item_warning"><i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/><t t-esc="item.warning"/></span>
-                                            </div>
-                                            <div class="ba_item_actions">
-                                                <button t-foreach="item.actions" t-as="act" t-key="act.name" type="button"
-                                                        t-att-class="'btn btn-sm ' + (act.style === 'success' ? 'btn-primary ba_act_success' : act.style === 'danger' ? 'btn-light text-danger' : 'btn-light')"
-                                                        t-att-disabled="state.busy" t-on-click="() => this.itemAction(item, act)" t-att-aria-label="act.label + ': ' + item.title">
-                                                    <span t-if="isBusy(item, act)" class="spinner-border spinner-border-sm me-1" aria-hidden="true"/><t t-esc="act.label"/>
-                                                </button>
-                                            </div>
-                                        </li>
-                                        <li class="ba_items_footer"><button type="button" class="btn btn-link p-0" t-on-click="() => this.openSection(tab.key)">View all <t t-esc="tab.count"/></button></li>
-                                    </ul>
+                                    <button t-if="day.items.length > calendarLimit" type="button" class="ba_cal_more" t-on-click="() => this.openSection('work_schedule')">+<t t-esc="day.items.length - calendarLimit"/> more</button>
                                 </div>
-                                <p t-if="clearTabs.length" class="ba_clear"><i class="fa fa-check text-success me-1" aria-hidden="true"/>Clear: <t t-esc="clearTabs.map((t) => t.label).join(', ')"/></p>
-                            </section>
-                            <section class="ba_card ba_goto">
-                                <div class="ba_card_header"><h2>Go to</h2></div>
-                                <nav class="ba_links" aria-label="Go to">
-                                    <button t-foreach="d.shortcuts" t-as="link" t-key="link.key" type="button" class="ba_link" t-on-click="() => this.openSection(link.key)"><span t-att-class="'ba_icon_chip is_small ba_tone_' + linkTone(link_index)"><i t-att-class="'fa ' + link.icon" aria-hidden="true"/></span><span class="flex-grow-1" t-esc="link.label"/><i class="fa fa-angle-right ba_link_chevron" aria-hidden="true"/></button>
-                                </nav>
-                            </section>
-                        </aside>
-                    </div>
+                            </div>
+                        </section>
+                    </main>
                 </div>
             </t>
 
@@ -168,7 +114,6 @@
                             <span class="ba_header_sub" t-esc="d.today_label"/>
                             <h1 t-esc="d.user_name"/>
                         </div>
-                        <button t-if="d.account_url" type="button" class="btn btn-light ba_account_btn ms-auto me-2" t-on-click="openAccount" title="My account" aria-label="My account"><i class="fa fa-user-circle-o" aria-hidden="true"/></button>
                         <button type="button" class="btn btn-light ba_refresh" t-on-click="load" t-att-disabled="state.loading" title="Refresh" aria-label="Refresh"><i t-att-class="'fa fa-refresh' + (state.loading ? ' fa-spin' : '')" aria-hidden="true"/></button>
                     </header>
 
@@ -200,7 +145,7 @@
                     <div class="ba_worker_panels_slot"/>
 
                     <section t-if="d.schedule" class="ba_card ba_agenda">
-                        <div class="ba_card_header"><h2>Upcoming shifts</h2><button type="button" class="btn btn-link ms-auto" t-on-click="() => this.openSection('work_schedule')">Open calendar</button></div>
+                        <div class="ba_card_header"><h2>Upcoming shifts</h2><button type="button" class="btn btn-link ms-auto" t-on-click="() => this.openSection('work_schedule')">All shifts</button></div>
                         <div t-if="!upcomingShifts.length" class="ba_empty">No published shifts in the next two weeks. Your coordinator publishes shifts here. Check Team messages, or request leave if you are unavailable.</div>
                         <div t-foreach="upcomingShifts" t-as="shift" t-key="shift.id" class="ba_shift_card ba_click" role="button" tabindex="0" t-on-click="() => this.navigate('open_shift', shift.id)">
                             <span class="ba_agenda_date"><span t-esc="shift.day"/><strong t-esc="shift.day_number"/></span>
@@ -226,16 +171,6 @@
                             <t t-call="binaryaid_hrms_dashboard.Status"><t t-set="tone" t-value="leave.tone"/><t t-set="label" t-value="leave.state"/></t>
                             <button t-if="leave.can_cancel" type="button" class="btn btn-sm btn-light" t-att-disabled="state.busy" t-on-click="() => this.cancelLeave(leave)">Cancel</button>
                         </div>
-                    </section>
-
-                    <section t-if="d.can_work and d.recent_work.length" class="ba_card">
-                        <div class="ba_card_header"><h2>My work items</h2><button t-if="d.has_employee" type="button" class="btn btn-link ms-auto" t-on-click="() => this.openSection('my_work')">View all</button></div>
-                        <table class="table table-sm ba_table ba_work_table mb-0"><tbody>
-                            <tr t-foreach="d.recent_work" t-as="work" t-key="work.id" class="ba_click" t-on-click="() => this.openWork(work.id)">
-                                <td class="ba_truncate" t-esc="work.name"/><td class="text-muted text-nowrap" t-esc="work.date"/>
-                                <td class="ba_col_status"><t t-call="binaryaid_hrms_dashboard.Status"><t t-set="tone" t-value="work.done ? 'green' : 'amber'"/><t t-set="label" t-value="work.status"/></t></td>
-                            </tr>
-                        </tbody></table>
                     </section>
                 </div>
             </t>
