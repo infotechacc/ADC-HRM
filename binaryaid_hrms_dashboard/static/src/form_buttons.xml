@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Clearly labelled Save and Cancel buttons instead of the cloud and cross icons on every form. -->
+    <t t-name="binaryaid_hrms_dashboard.FormStatusIndicator" t-inherit="web.FormStatusIndicator" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('o_form_button_save')]" position="attributes">
+            <attribute name="class">o_form_button_save btn btn-primary btn-sm px-3 me-1</attribute>
+        </xpath>
+        <xpath expr="//button[hasclass('o_form_button_save')]/i" position="replace"><span>Save</span></xpath>
+        <xpath expr="//button[hasclass('o_form_button_cancel')]" position="attributes">
+            <attribute name="class">o_form_button_cancel btn btn-secondary btn-sm px-3</attribute>
+            <attribute name="data-tooltip">Cancel all changes</attribute>
+            <attribute name="aria-label">Cancel all changes</attribute>
+        </xpath>
+        <xpath expr="//button[hasclass('o_form_button_cancel')]/i" position="replace"><span>Cancel</span></xpath>
+    </t>
+</templates>
