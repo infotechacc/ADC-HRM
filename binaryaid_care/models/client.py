@@ -13,6 +13,17 @@ class CarePlan(models.Model):
     _order = 'name, id'
 
     name = fields.Char(string='Plan name', required=True)
+    line_ids = fields.One2many('binaryaid.care.plan.line', 'plan_id', string='Services', copy=True)
+
+
+class CarePlanLine(models.Model):
+    _name = 'binaryaid.care.plan.line'
+    _description = 'Care Plan Service'
+    _order = 'plan_id, sequence, id'
+
+    plan_id = fields.Many2one('binaryaid.care.plan', required=True, ondelete='cascade', index=True)
+    sequence = fields.Integer(default=10)
+    name = fields.Char(string='Service', required=True)
 
 
 class CareClient(models.Model):

@@ -33,8 +33,9 @@ stop new shifts; history is kept.
   Each file has *Preview* and *Download* buttons.
 
 ## Plans
-Care Operations ▸ Plans lists all plans. Click *New*, enter the plan name and *Save*;
-click a plan to open and rename it.
+Care Operations ▸ Plans lists all plans with their services. Click *New*, enter the
+plan name, add one line per service the plan includes (*Add a line*), then *Save*.
+Click a plan to open and change it.
 
 ## Shifts
 Create from the dashboard (button or planner day). Choose the client first: the

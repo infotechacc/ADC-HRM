@@ -59,7 +59,14 @@ class TestCareClients(CareCase):
 
     def test_care_plans(self):
         Plan = self.env['binaryaid.care.plan'].with_user(self.admin)
-        morning, meals = Plan.create([{'name': 'Morning routine'}, {'name': 'Meal preparation'}])
+        morning, meals = Plan.create([
+            {'name': 'Morning routine', 'line_ids': [(0, 0, {'name': 'Personal care'}), (0, 0, {'name': 'Medication prompt'})]},
+            {'name': 'Meal preparation'}])
+        self.assertEqual(morning.line_ids.mapped('name'), ['Personal care', 'Medication prompt'])
+        morning.line_ids = [(0, 0, {'name': 'Breakfast'})]
+        self.assertEqual(len(morning.line_ids), 3)
+        with self.assertRaises(AccessError):
+            self.env['binaryaid.care.plan.line'].with_user(self.alice_user).create({'plan_id': morning.id, 'name': 'x'})
         self.client.with_user(self.admin).plan_ids = [(6, 0, (morning | meals).ids)]
         self.assertEqual(self.client.plan_ids, morning | meals)
         self.client.with_user(self.admin).plan_ids = [(0, 0, {'name': 'Community access'})]

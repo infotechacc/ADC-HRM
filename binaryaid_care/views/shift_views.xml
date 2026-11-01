@@ -20,7 +20,7 @@
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Care plans" name="client_plans" invisible="not client_id" groups="binaryaid_work_management.group_work_admin">
-                    <field name="client_plan_ids" readonly="1"><list><field name="name"/></list></field>
+                    <field name="client_plan_ids" readonly="1"><list><field name="name"/><field name="line_ids" widget="many2many_tags" string="Services"/></list></field>
                 </page>
             </xpath>
         </field>
