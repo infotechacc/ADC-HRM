@@ -132,12 +132,23 @@ class HrmsDashboard(models.AbstractModel):
             'planned_hours': round(sum(i['hours'] for i in items if not i['past']), 2),
         }
 
+    def _calendar_domain(self):
+        """Administrators plan every draft and published shift; employees see their own published shifts."""
+        domain = [('company_id', '=', self.env.company.id)]
+        if self._is_shift_admin():
+            return domain + [('state', 'in', ['draft', 'published'])]
+        return domain + [('user_id', '=', self.env.uid), ('state', '=', 'published')]
+
+    def _check_calendar_access(self):
+        self._check_user()
+        if not (self._is_shift_admin() or self.env.user.has_group('binaryaid_work_management.group_work_user')):
+            raise AccessError(_('The shift calendar is not available to you.'))
+
     def _day_board(self, date):
-        """Shift cards for one local date, for administrators."""
+        """Shift cards for one local date: all shifts for administrators, own shifts for employees."""
         start, end = self._utc_bounds(date, 1)
         shifts = self.env['binaryaid.work.shift'].search([
-            ('company_id', '=', self.env.company.id), ('state', 'in', ['draft', 'published']),
-            ('start', '<', end), ('end', '>', start)], order='start, employee_name', limit=100)
+            *self._calendar_domain(), ('start', '<', end), ('end', '>', start)], order='start, employee_name', limit=100)
         now = fields.Datetime.now()
         rows = []
         for shift in shifts:
@@ -165,8 +176,7 @@ class HrmsDashboard(models.AbstractModel):
         grid_end = next_month + timedelta(days=(7 - next_month.weekday()) % 7)
         start, end = self._utc_bounds(grid_start, (grid_end - grid_start).days)
         shifts = self.env['binaryaid.work.shift'].search([
-            ('company_id', '=', self.env.company.id), ('state', 'in', ['draft', 'published']),
-            ('start', '<', end), ('end', '>', start)])
+            *self._calendar_domain(), ('start', '<', end), ('end', '>', start)])
         today = fields.Date.context_today(self)
         days = {}
         current = grid_start
@@ -195,17 +205,13 @@ class HrmsDashboard(models.AbstractModel):
     @api.model
     @api.readonly
     def calendar_month(self, date):
-        self._check_user()
-        if not self._is_shift_admin():
-            raise AccessError(_('Only Work Management administrators can view the shift calendar.'))
+        self._check_calendar_access()
         return self._month_calendar(fields.Date.to_date(date))
 
     @api.model
     @api.readonly
     def day_board(self, date):
-        self._check_user()
-        if not self._is_shift_admin():
-            raise AccessError(_('Only Work Management administrators can view the shift calendar.'))
+        self._check_calendar_access()
         return self._day_board(fields.Date.to_date(date))
 
     def _quick_actions(self, admin):
@@ -221,7 +227,7 @@ class HrmsDashboard(models.AbstractModel):
         data['schedule'] = None
         data['day'] = None
         data['calendar'] = None
-        if self._is_shift_admin():
+        if self._is_shift_admin() or data['can_work']:
             today = fields.Date.context_today(self)
             data['day'] = self._day_board(today)
             data['calendar'] = self._month_calendar(today)
@@ -290,5 +296,5 @@ class HrmsDashboard(models.AbstractModel):
         if not shift:
             raise AccessError(_('This shift is not available on your dashboard.'))
         return {'type': 'ir.actions.act_window', 'name': shift.name,
-                'res_model': 'binaryaid.work.shift', 'res_id': shift.id,
+                'res_model': 'binaryaid.work.shift', 'res_id': shift.id, 'target': 'new',
                 'views': [(self.env.ref('binaryaid_work_scheduling.view_shift_form').id, 'form')]}

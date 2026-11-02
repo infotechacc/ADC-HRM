@@ -1,6 +1,12 @@
 # ADC HRMS – worker guide
 
-Log in on your phone browser. Your home screen shows:
+Log in on your phone or computer browser. *My dashboard* looks like the
+administrators' dashboard: figures at the top, links to My shifts, Incident forms,
+Team messages, Leave and My profile, your Check In / Check Out card, team messages
+and leave, then a **calendar of your own published shifts**. Click a date to see that
+day's shift cards (day and date, time, client, location, status); click a card to
+see the shift details in a pop-up.
+
 
 1. **Check In** and **Check Out** – both buttons are always shown; the one you
    can use now is enabled. Check In opens shortly before your shift. Allow location
@@ -13,7 +19,7 @@ Log in on your phone browser. Your home screen shows:
    address, no signal, forgot to check in/out). Your coordinator reviews it.
 4. **Report incident** – any time during your shift, for the client you are
    supporting. Add photos, video or audio if useful. This is an internal report.
-5. **My shifts** – your published roster for the next 14 days.
+5. **My shifts** – the list of all your published shifts.
 6. **Team messages**, **My leave** (request leave), **My profile**.
 
 Logging out does **not** end your shift – always Check Out.

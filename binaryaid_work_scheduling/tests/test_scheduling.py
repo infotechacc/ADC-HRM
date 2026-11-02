@@ -185,10 +185,16 @@ class TestScheduleBrowser(HttpCase):
                 }
                 throw new Error('Missing element: ' + selector);
             };
-            await waitFor('.ba_shift_card');
-            if (!document.querySelector('.ba_dashboard').textContent.includes('Browser roster shift')) {
-                throw new Error('Published shift missing from dashboard');
+            await waitFor('.ba_month_grid');
+            const card = await waitFor('.ba_shift_tile');
+            if (!card.textContent.includes('Browser roster shift')) {
+                throw new Error('Published shift missing from the day cards');
             }
+            if (document.querySelector('.ba_dayview .btn-primary')) throw new Error('Employees cannot assign shifts');
+            card.click();
+            await waitFor('.o_dialog .o_form_view');
+            document.querySelector('.o_dialog .btn-close').click();
+            for (let i = 0; i < 50 && document.querySelector('.o_dialog'); i++) await new Promise(r => setTimeout(r, 100));
             const button = [...document.querySelectorAll('.ba_dashboard button')]
                 .find(el => el.textContent.includes('All shifts'));
             button.click();

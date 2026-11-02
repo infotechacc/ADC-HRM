@@ -77,10 +77,6 @@ class TestDashboardOperations(TransactionCase):
         draft = self.shift(self.employee, now + timedelta(days=1), now + timedelta(days=1, hours=4))
         data, cards = self.overview(self.alice)
         self.assertFalse(data['admin'])
-        self.assertFalse(data['day'])
-        for method in ('calendar_month', 'day_board'):
-            with self.assertRaises(AccessError):
-                getattr(self.dashboard.with_user(self.alice), method)(str(now.date()))
         self.assertNotIn('unpublished', cards)
         self.assertIn('presence', data)
         dashboard = self.dashboard.with_user(self.alice)
@@ -90,6 +86,20 @@ class TestDashboardOperations(TransactionCase):
         with self.assertRaises(AccessError):
             dashboard.quick_action('create_shift')
         self.assertEqual(draft.state, 'draft')
+
+    def test_employee_calendar_shows_own_published_shifts(self):
+        now = fields.Datetime.now()
+        shift = self.shift(self.employee, now + timedelta(days=1), now + timedelta(days=1, hours=4))
+        board = self.dashboard.with_user(self.alice).with_context(tz='UTC')
+        day = str(shift.start.date())
+        self.assertTrue(board.get_overview()['calendar'])
+        self.assertNotIn(shift.id, [r['id'] for r in board.day_board(day)['rows']], 'drafts stay hidden')
+        shift.action_publish()
+        self.assertEqual([r['id'] for r in board.day_board(day)['rows']], [shift.id])
+        self.assertFalse(self.dashboard.with_user(self.bob).with_context(tz='UTC').day_board(day)['rows'], 'not other workers')
+        cell = next(d for week in board.calendar_month(day)['weeks'] for d in week if d['date'] == day)
+        self.assertEqual(cell['count'], 1)
+        self.assertEqual(board.open_shift(shift.id)['target'], 'new')
 
 
 @tagged('post_install', '-at_install')

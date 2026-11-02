@@ -146,13 +146,14 @@ export class HrmsDashboard extends Component {
         return this.selectDay(this.todayDate);
     }
     openShift(id, title) {
+        if (!this.state.data.admin) {
+            // Employees see the details of their own published shift.
+            return this.navigate("open_shift", id);
+        }
         return this.itemAction({ source: "shift", id, title }, { name: "open", label: _t("Open") });
     }
 
     // Worker ---------------------------------------------------------------------
-    get upcomingShifts() {
-        return (this.state.data?.schedule?.shifts || []).filter((shift) => !shift.past);
-    }
     noop() {}
     colorFor(name) {
         let hash = 0;
