@@ -241,6 +241,16 @@ class TestCareMessagesAndProfile(CareCase):
         self.bob.with_user(self.admin).write({'active': False})
         self.assertFalse(self.bob_user.active)
 
+    def test_care_operations_menus(self):
+        root = self.env.ref('binaryaid_care.menu_care_root')
+        menus = self.env['ir.ui.menu'].with_user(self.admin).search([('parent_id', '=', root.id)])
+        self.assertEqual(menus.mapped('name'), ['Clients', 'Plans', 'All Shifts'])
+        action = self.env.ref('binaryaid_care.menu_care_shifts').action
+        self.assertEqual(action.res_model, 'binaryaid.work.shift')
+        self.assertEqual(action.view_mode.split(',')[0], 'list')
+        self.assertIn(root.id, self.env['ir.ui.menu'].with_user(self.admin)._visible_menu_ids())
+        self.assertNotIn(root.id, self.env['ir.ui.menu'].with_user(self.alice_user)._visible_menu_ids())
+
     def test_dashboard_quick_actions(self):
         dashboard = self.env['binaryaid.hrms.dashboard'].with_user(self.admin)
         data = dashboard.get_overview()

@@ -42,7 +42,8 @@ plan name, add one line per service the plan includes (*Add a line*), then *Save
 Click a plan to open and change it.
 
 ## Shifts
-Create from the dashboard (button or planner day). Choose the client first: the
+Care Operations ▸ All Shifts lists every shift (switch to the calendar from the view
+buttons). Create from the dashboard (button or calendar day). Choose the client first: the
 service location and care plans appear. *Save* keeps a draft; *Publish*
 notifies the worker. Publishing is blocked for overlapping shifts, approved leave,
 inactive employees or clients, and asks for a manager note when documents are

@@ -1,6 +1,6 @@
 {
     'name': 'BinaryAid Care Operations',
-    'version': '19.0.2.3.0',
+    'version': '19.0.2.4.0',
     'category': 'Human Resources',
     'summary': 'Clients, care plans, worker documents, team messages and care roster rules',
     'description': 'Australian Diversity Care operations: simple client records with care plans and documents, '

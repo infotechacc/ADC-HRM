@@ -27,11 +27,13 @@
         <field name="domain">[('state', 'in', ['confirm', 'validate1'])]</field>
     </record>
 
-    <!-- Care Operations keeps only Clients and Plans. -->
+    <!-- Care Operations: Clients, Plans and All Shifts. -->
     <menuitem id="menu_care_root" name="Care Operations" sequence="2" web_icon="hr,static/description/icon.png"
               groups="binaryaid_work_management.group_work_admin,group_care_reviewer"/>
     <menuitem id="menu_care_clients" name="Clients" parent="menu_care_root" action="action_care_client" sequence="10"
               groups="binaryaid_work_management.group_work_admin,group_care_reviewer"/>
     <menuitem id="menu_care_plans" name="Plans" parent="menu_care_root" action="action_care_plan" sequence="20"
               groups="binaryaid_work_management.group_work_admin"/>
+    <menuitem id="menu_care_shifts" name="All Shifts" parent="menu_care_root" action="binaryaid_work_scheduling.action_work_schedule"
+              sequence="30" groups="binaryaid_work_management.group_work_admin"/>
 </odoo>
