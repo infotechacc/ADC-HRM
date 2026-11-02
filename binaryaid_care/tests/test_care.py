@@ -240,6 +240,9 @@ class TestCareMessagesAndProfile(CareCase):
         self.assertIn('private_phone', writeable)
         self.bob.with_user(self.admin).write({'active': False})
         self.assertFalse(self.bob_user.active)
+        form = self.env['hr.employee'].with_user(self.admin).get_views([(False, 'form')])['views']['form']['arch']
+        self.assertNotIn('Care employment', form)
+        self.assertIn('action_binaryaid_documents', form)
 
     def test_care_operations_menus(self):
         root = self.env.ref('binaryaid_care.menu_care_root')
