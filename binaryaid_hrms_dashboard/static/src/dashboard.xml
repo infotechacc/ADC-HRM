@@ -135,9 +135,8 @@
                     </nav>
 
                     <div class="ba_worker_top">
-                        <div class="ba_worker_actions_slot"/>
                         <div class="ba_worker_side">
-                            <div class="ba_worker_panels_slot"/>
+                            <div class="ba_worker_actions_slot"/>
                             <section t-if="d.my_leave" class="ba_card">
                                 <div class="ba_card_header"><h2>My leave</h2><button type="button" class="btn btn-link ms-auto" t-on-click="() => this.openSection('my_leave')">All requests</button></div>
                                 <div t-if="!d.my_leave.length" class="ba_empty">No upcoming or pending leave.</div>
@@ -147,6 +146,9 @@
                                     <button t-if="leave.can_cancel" type="button" class="btn btn-sm btn-light" t-att-disabled="state.busy" t-on-click="() => this.cancelLeave(leave)">Cancel</button>
                                 </div>
                             </section>
+                        </div>
+                        <div class="ba_worker_side">
+                            <div class="ba_worker_panels_slot"/>
                         </div>
                     </div>
 
