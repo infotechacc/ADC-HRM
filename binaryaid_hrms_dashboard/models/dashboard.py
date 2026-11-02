@@ -22,12 +22,6 @@ class HrmsDashboard(models.AbstractModel):
     def _can_approve_leave(self):
         return 'hr.leave' in self.env and self.env.user.has_group('hr_holidays.group_hr_holidays_user')
 
-    def _work_domain(self):
-        domain = [('binaryaid_employee_id', '!=', False), ('company_id', '=', self.env.company.id)]
-        if not self.env.user.has_group('binaryaid_work_management.group_work_admin'):
-            domain.append(('binaryaid_employee_id.user_id', '=', self.env.uid))
-        return domain
-
     def _document_alert_domain(self):
         """Native identity documents expiring inside the company notice period, or already expired."""
         limit = fields.Date.add(fields.Date.context_today(self),
@@ -45,17 +39,7 @@ class HrmsDashboard(models.AbstractModel):
         """
         self._check_user()
         company = self.env.company.id
-        today = fields.Date.context_today(self)
-        month = fields.Date.start_of(today, 'month')
-        next_month = fields.Date.add(month, months=1)
         specs = {}
-        if self.env.user.has_group('binaryaid_work_management.group_work_user'):
-            domain = self._work_domain()
-            specs.update({
-                'work_today': ('project.task', _('Work for today'), domain + [('binaryaid_work_date', '=', today)], 'fa-calendar-check-o', 'purple', _('Scheduled for your local date')),
-                'work_open': ('project.task', _('Open work'), domain + [('state', '!=', '1_done')], 'fa-tasks', 'amber', _('Across all work dates')),
-                'work_done': ('project.task', _('Completed this month'), domain + [('state', '=', '1_done'), ('binaryaid_work_date', '>=', month), ('binaryaid_work_date', '<', next_month)], 'fa-check-circle-o', 'teal', _('Based on Work Date')),
-            })
         if self.env.user.has_group('hr.group_hr_user'):
             specs['employees'] = ('hr.employee', _('Active employees'), [('company_id', '=', company)], 'fa-users', 'blue', _('In the active company'))
             specs['documents'] = ('hr.employee', _('Document alerts'), self._document_alert_domain(), 'fa-id-card-o', 'red', _('Visa or work permit expiring'))
@@ -75,7 +59,7 @@ class HrmsDashboard(models.AbstractModel):
         if admin:
             return ['shifts_today', 'attendance', 'unpublished', 'missing_signout', 'leave',
                     'timesheets', 'documents', 'recruitment']
-        return ['work_today', 'work_open', 'work_done', 'leave']
+        return ['leave']
 
     def _quick_actions(self, admin):
         """Create/review shortcuts that open as dialogs over the dashboard."""
@@ -111,9 +95,6 @@ class HrmsDashboard(models.AbstractModel):
             data['my_leave'] = self._own_leave()
             data['shortcuts'].append({'key': 'my_leave', 'label': _('My leave'), 'icon': 'fa-calendar-minus-o'})
         data['shortcuts'].append({'key': 'profile', 'label': _('My profile'), 'icon': 'fa-user-circle-o'})
-        if can_work and self.env['binaryaid.work.employee'].search_count([
-                ('user_id', '=', user.id), ('company_id', '=', self.env.company.id)], limit=1):
-            data['shortcuts'].insert(0, {'key': 'my_work', 'label': _('My Work History'), 'icon': 'fa-list-alt'})
         return data
 
     def _own_leave_domain(self):
@@ -136,27 +117,15 @@ class HrmsDashboard(models.AbstractModel):
     @api.readonly
     def open_section(self, key):
         specs = self._specifications()
-        user = self.env.user
         if key == 'discuss':
             return self.env['ir.actions.actions']._for_xml_id('mail.action_discuss')
         if key == 'profile':
             return self.env['res.users'].browse(self.env.uid).action_get()
         if key == 'my_leave' and 'hr.leave' in self.env:
             return self.env['ir.actions.actions']._for_xml_id('hr_holidays.hr_leave_action_new_request')
-        if key == 'my_work' and user.has_group('binaryaid_work_management.group_work_user'):
-            return self.env['binaryaid.work.employee'].action_my_work()
         if key not in specs:
             raise AccessError(_('You do not have access to this dashboard section.'))
         model, label, domain = specs[key][:3]
-        if model == 'project.task':
-            action = self.env['ir.actions.actions']._for_xml_id('binaryaid_work_management.action_work_items')
-            context = {'group_by': ['binaryaid_work_date:day']}
-            own_employee = self.env['binaryaid.work.employee'].search([
-                ('user_id', '=', user.id), ('company_id', '=', self.env.company.id)], limit=1)
-            if own_employee:
-                context['default_binaryaid_employee_id'] = own_employee.id
-            action.update(name=label, display_name=label, domain=domain, context=context)
-            return action
         return {'type': 'ir.actions.act_window', 'name': label, 'res_model': model,
                 'view_mode': 'list,form', 'views': [(False, 'list'), (False, 'form')], 'domain': domain}
 

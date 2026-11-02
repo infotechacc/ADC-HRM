@@ -55,5 +55,4 @@
         <field name="state">code</field>
         <field name="code">records.action_publish()</field>
     </record>
-    <menuitem id="menu_work_schedule" name="Weekly Work Schedule" parent="binaryaid_work_management.menu_work_root" action="action_work_schedule" groups="binaryaid_work_management.group_work_user" sequence="15"/>
 </odoo>

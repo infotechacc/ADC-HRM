@@ -1,5 +1,7 @@
 # BinaryAid Work Management
 
+> **ADC simplification (Nov 2026):** the Work Management menu, the employee form's Work Management and Daily Work History buttons, and the work item figures on the dashboard are removed. The module stays installed: its user groups (Work Management User / Administrator) decide who is a worker and who is an administrator, and the other modules are built on it.
+
 Odoo 19 custom extension of `project.task`, depending on `hr` and `project`.
 No Odoo core files are changed. Timesheets are not required: dated narrative
 work notes are not billed hours or attendance records.

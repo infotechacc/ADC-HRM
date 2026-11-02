@@ -1,5 +1,7 @@
 # BinaryAid Roster Planning
 
+> **ADC simplification (Nov 2026):** the Roster Planning menus are removed; shifts are created from the HRMS Dashboard calendar. The models stay installed for attendance status, leave conflicts and approved actual hours.
+
 Reusable, versioned roster patterns and effective employee assignments for ADC
 HRMS / Odoo 19. Read [the architecture decision and complete workflow](ARCHITECTURE.md)
 for the alternatives, security model, Australian research and practical limits.

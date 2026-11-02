@@ -178,7 +178,4 @@
         <field name="search_view_id" ref="view_history_search"/>
         <field name="context">{'search_default_work_month': 1, 'search_default_employee': 1, 'search_default_day': 2}</field>
     </record>
-    <menuitem id="menu_work_root" name="Work Management" parent="hr.menu_hr_root" sequence="25" groups="group_work_user"/>
-    <menuitem id="menu_work_items" name="Work Items" parent="menu_work_root" action="action_work_items" sequence="10"/>
-    <menuitem id="menu_work_history" name="Daily Work History" parent="menu_work_root" action="action_work_history" sequence="20"/>
 </odoo>

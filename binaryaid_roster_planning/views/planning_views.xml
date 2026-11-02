@@ -59,13 +59,4 @@
     <record id="view_event_list" model="ir.ui.view"><field name="name">roster.event.list</field><field name="model">binaryaid.roster.event</field><field name="arch" type="xml"><list create="false" edit="false" delete="false"><field name="create_date"/><field name="shift_id"/><field name="employee_id"/><field name="event"/><field name="author_id"/><field name="reason"/></list></field></record>
     <record id="view_actual_list" model="ir.ui.view"><field name="name">roster.actual.list</field><field name="model">binaryaid.roster.actual</field><field name="arch" type="xml"><list create="false" edit="false" delete="false"><field name="create_date"/><field name="shift_id"/><field name="employee_id"/><field name="hours"/><field name="is_void"/><field name="reason"/><field name="author_id"/></list></field></record>
     <record id="action_roster_actual" model="ir.actions.act_window"><field name="name">Actual Work Approval History</field><field name="res_model">binaryaid.roster.actual</field><field name="view_mode">list,form</field></record>
-    <menuitem id="menu_roster_root" name="Roster Planning" parent="binaryaid_work_management.menu_work_root" sequence="12" groups="binaryaid_work_management.group_work_admin"/>
-    <menuitem id="menu_roster_template" name="Schedule Templates" parent="menu_roster_root" action="action_roster_template" sequence="10"/>
-    <menuitem id="menu_roster_assignment" name="Employee Assignments" parent="menu_roster_root" action="action_roster_assignment" sequence="20"/>
-    <menuitem id="menu_roster_run" name="Generation Runs" parent="menu_roster_root" action="action_roster_run" sequence="30"/>
-    <record id="menu_roster_run" model="ir.ui.menu"><field name="active" eval="False"/></record>
-    <menuitem id="menu_roster_policy" name="Review Policies" parent="menu_roster_root" action="action_roster_policy" sequence="40"/>
-    <menuitem id="menu_roster_audit" name="Roster Audit" parent="menu_roster_root" action="action_employee_shift_history" sequence="50"/>
-    <menuitem id="menu_roster_actual" name="Actual Work History" parent="menu_roster_root" action="action_roster_actual" sequence="60"/>
-    <record id="menu_roster_actual" model="ir.ui.menu"><field name="active" eval="False"/></record>
 </odoo>

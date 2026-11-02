@@ -6,7 +6,7 @@ import { _t } from "@web/core/l10n/translation";
 
 // Friendly, distinguishable colours: each worker keeps the same colour everywhere.
 const PALETTE = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#14b8a6", "#6366f1", "#f97316", "#0ea5e9", "#84cc16"];
-const NAV_TONES = { work_schedule: "blue", my_incidents: "red", team_messages: "purple", my_leave: "teal", profile: "amber", discuss: "green", my_work: "indigo" };
+const NAV_TONES = { work_schedule: "blue", my_incidents: "red", team_messages: "purple", my_leave: "teal", profile: "amber", discuss: "green" };
 
 export class HrmsDashboard extends Component {
     static template = "binaryaid_hrms_dashboard.Dashboard";

@@ -21,21 +21,18 @@ class TestDashboard(TransactionCase):
 
     def test_employee_summary_and_drilldowns(self):
         dashboard = self.dashboard.with_user(self.alice)
-        self.task.with_user(self.alice).action_binaryaid_complete()
         data = dashboard.get_overview()
         cards = {card['key']: card['value'] for card in data['cards']}
-        self.assertEqual(cards['work_today'], 1)
-        self.assertEqual(cards['work_open'], 0)
-        self.assertEqual(cards['work_done'], 1)
+        for removed in ('work_today', 'work_open', 'work_done'):
+            self.assertNotIn(removed, cards, 'work item figures are not shown')
         for removed in ('recent_work', 'attention', 'account_url', 'completion_percent'):
             self.assertNotIn(removed, data)
         self.assertNotIn('employees', cards)
-        self.assertTrue({'my_work', 'discuss', 'profile'}.issubset({link['key'] for link in data['shortcuts']}))
+        links = {link['key'] for link in data['shortcuts']}
+        self.assertTrue({'discuss', 'profile'}.issubset(links))
+        self.assertNotIn('my_work', links)
         self.assertFalse(data['admin'])
-        for key in ('work_today', 'work_done'):
-            action = dashboard.open_section(key)
-            self.assertEqual(self.env['project.task'].with_user(self.alice).search(action['domain']), self.task.with_user(self.alice))
-        for key in ('employees', 'employee_work', 'history', 'invented'):
+        for key in ('employees', 'work_today', 'my_work', 'employee_work', 'history', 'invented'):
             with self.assertRaises(AccessError):
                 dashboard.open_section(key)
         with self.assertRaises(AccessError):

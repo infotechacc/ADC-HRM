@@ -33,14 +33,6 @@
             <p>Ask an administrator to link your user account to your employee profile.</p>
         </field>
     </record>
-    <record id="menu_work_items" model="ir.ui.menu">
-        <field name="name">Employee Work</field>
-        <field name="action" ref="action_work_employees"/>
-        <field name="group_ids" eval="[(6, 0, [ref('group_work_admin')])]"/>
-    </record>
-    <record id="menu_work_history" model="ir.ui.menu">
-        <field name="group_ids" eval="[(6, 0, [ref('group_work_admin')])]"/>
-    </record>
     <record id="action_work_history" model="ir.actions.act_window">
         <field name="group_ids" eval="[(6, 0, [ref('group_work_admin')])]"/>
     </record>
@@ -51,6 +43,4 @@
         <field name="state">code</field>
         <field name="code">action = model.action_my_work()</field>
     </record>
-    <menuitem id="menu_my_work" name="My Work History" parent="menu_work_root"
-              action="action_my_work" sequence="5" groups="group_work_user"/>
 </odoo>

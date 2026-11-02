@@ -1,5 +1,7 @@
 # BinaryAid Work Scheduling
 
+> **ADC simplification (Nov 2026):** the Weekly Work Schedule menu is removed. Shifts are planned on the HRMS Dashboard calendar; *All shifts* opens the shift list (list view first, calendar one click away).
+
 Odoo 19 add-on for ADC HRMS. Depends on `binaryaid_hrms_dashboard` and reuses
 `binaryaid_work_management` roles, employee assignments and native Project tasks.
 Odoo core and existing module source files are unchanged.
