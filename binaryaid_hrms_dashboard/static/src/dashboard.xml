@@ -38,8 +38,8 @@
                         t-att-aria-selected="state.selected === day.date ? 'true' : 'false'" t-att-aria-label="day.date + ': ' + day.count + ' shifts'"
                         t-on-click="() => this.selectDay(day.date)">
                     <span class="ba_month_number" t-esc="day.number"/>
-                    <span t-if="day.count" class="ba_month_count"><t t-esc="day.count"/> shift<t t-if="day.count > 1">s</t></span>
-                    <span t-if="day.unfilled" class="ba_month_flag"><t t-esc="day.unfilled"/> unfilled</span>
+                    <span t-if="day.count" class="ba_month_count"><t t-esc="day.count"/><span class="ba_month_word"> shift<t t-if="day.count > 1">s</t></span></span>
+                    <span t-if="day.unfilled" class="ba_month_flag"><t t-esc="day.unfilled"/><span class="ba_month_word"> unfilled</span></span>
                 </button>
             </t>
         </div>

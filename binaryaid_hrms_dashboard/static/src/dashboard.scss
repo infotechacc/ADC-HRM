@@ -133,6 +133,7 @@
     @media (max-width: 991px) {
         .ba_header, .ba_body { padding-left: 16px; padding-right: 16px; }
         .ba_month_day { min-height: 58px; padding: 5px; }
+        .ba_month_grid { gap: 4px; padding: 8px; }
     }
     @media (max-width: 575px) {
         .ba_header_actions { width: 100%; .btn { flex: 1 1 auto; } }
@@ -141,6 +142,13 @@
         .ba_metric_icon { width: 34px; height: 34px; font-size: 15px; border-radius: 10px; }
         .ba_metric_value { font-size: 20px; }
         .ba_metric_hint { display: none; }
+        // Phones: the day boxes show the number of shifts only.
+        .ba_month_word { display: none; }
+        .ba_month_day, .ba_worker_main .ba_month_day { min-height: 52px; padding: 4px 2px; align-items: center; }
+        .ba_month_number { min-width: 0; padding: 1px 5px; font-size: 12px; }
+        .ba_month_count, .ba_month_flag { padding: 0 6px; }
+        .ba_month .ba_card_header { flex-wrap: nowrap; gap: 6px; padding: 10px 12px; }
+        .ba_month_title { min-width: 0; flex: 1 1 auto; font-size: 14px !important; }
     }
     @media (prefers-reduced-motion: reduce) { .ba_metric { transition: none; &:hover { transform: none; } } .fa-spin { animation: none; } }
 }
