@@ -27,6 +27,16 @@
                 </t>
                 <t t-else="">
                     <div class="ba_clock_body"><span class="ba_eyebrow">Attendance</span>
+                    <t t-set="next" t-value="d.schedule and d.schedule.next"/>
+                    <div t-if="next" class="ba_clock_next">
+                        <span class="ba_clock_next_date"><span t-esc="next.day"/><strong t-esc="next.day_number"/></span>
+                        <span class="ba_clock_next_body">
+                            <span class="ba_clock_next_label">Next shift</span>
+                            <strong t-esc="next.client or next.name"/>
+                            <span class="ba_num"><i class="fa fa-clock-o me-1" aria-hidden="true"/><t t-esc="next.time_label"/></span>
+                            <span t-if="next.address or next.location" class="text-muted"><i class="fa fa-map-marker me-1" aria-hidden="true"/><t t-esc="next.address or next.location"/></span>
+                        </span>
+                    </div>
                     <t t-call="binaryaid_care_attendance.ClockButtons"/>
                     <span class="ba_clock_line text-muted d-block mt-2">Check In opens <t t-esc="d.clock.early"/> minutes before your next published shift.</span></div>
                 </t>

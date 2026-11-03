@@ -13,6 +13,14 @@
     .ba_clock_plan { margin: 0 0 4px; padding: 10px 12px; border-radius: 8px; background: #f0e9fe; color: #3b2a63; font-size: 13px; white-space: pre-line;
         .ba_eyebrow { color: #7c3aed; } }
     .ba_clock_buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .ba_clock_btn { width: 100%; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 17px; }
+    .ba_clock_btn { width: 100%; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 17px;
+        &:disabled { opacity: 1; background: #f2f4f7; border-color: #e4e7ec; color: #98a2b3; } }
+    .ba_clock_next { display: flex; gap: 14px; align-items: center; margin-top: 10px; padding: 12px 14px; border-radius: 12px; background: #f6f5fd; }
+    .ba_clock_next_date { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 52px; padding: 6px 8px;
+        border-radius: 10px; background: var(--ba-surface); color: var(--ba-muted); font-size: 11px; font-weight: 700; text-transform: uppercase;
+        strong { color: var(--ba-text); font-size: 20px; line-height: 1.1; } }
+    .ba_clock_next_body { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 13px;
+        strong { font-size: 15px; overflow-wrap: anywhere; } }
+    .ba_clock_next_label { color: var(--ba-primary); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
     .ba_clock_link { align-self: center; font-size: 13px; padding: 8px 0 0; }
 }
