@@ -24,3 +24,12 @@
     .ba_clock_next_label { color: var(--ba-primary); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
     .ba_clock_link { align-self: center; font-size: 13px; padding: 8px 0 0; }
 }
+.ba_location_dialog { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 4px 4px 0; }
+.ba_location_icon { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #fde8e8; color: #dc2626; font-size: 26px; }
+.ba_location_lead { margin: 0; max-width: 420px; }
+.ba_location_place { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 12px 14px; border-radius: 12px; background: #f6f5fd;
+    strong { font-size: 15px; overflow-wrap: anywhere; } }
+.ba_location_client { color: var(--bs-secondary-color, #667085); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+.ba_location_facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;
+    > span { display: flex; flex-direction: column; padding: 10px; border: 1px solid #e4e7ec; border-radius: 10px; color: #667085; font-size: 12px; } }
+.ba_location_value { color: #101828; font-size: 20px; font-weight: 700; }

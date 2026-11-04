@@ -26,7 +26,10 @@ notifies the worker. If publishing is blocked, the draft is kept and the reason 
 Care Operations ▸ Clients. One form holds the client name, phone and email,
 the alternative contact's name, phone and email, and the service location with its
 latitude, longitude, timezone and clock radius. Workers can only check in and out
-within the clock radius of these coordinates. Archive a client (⚙ ▸ Archive) to
+within the clock radius of these coordinates: each shift uses the client's service
+location, and a worker tapping Check In outside the radius sees a pop-up with the
+address and is not checked in. Odoo's own attendance check in (top bar and kiosk)
+is switched off. Archive a client (⚙ ▸ Archive) to
 stop new shifts; history is kept.
 
 - **Care plans** (after Clock radius): choose one or more plans from

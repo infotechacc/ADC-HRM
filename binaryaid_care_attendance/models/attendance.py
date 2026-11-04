@@ -5,6 +5,14 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 from odoo.addons.binaryaid_care.models.tools import distance_m, get_param
 
+class OutOfRange(ValidationError):
+    """The worker is not inside the clock radius of the shift's service location."""
+
+    def __init__(self, message, details):
+        super().__init__(message)
+        self.details = details
+
+
 EXCEPTION_KINDS = [
     ('gps_failure', 'GPS unavailable'),
     ('wrong_location', 'Not at the stored location'),
@@ -197,9 +205,11 @@ class CareClock(models.AbstractModel):
         distance = distance_m(latitude, longitude, location.latitude, location.longitude)
         radius = location.radius_m or 50
         if distance > radius:
-            raise ValidationError(_('You are about %(dist)d m from %(place)s. Sign in and out are accepted within '
-                                    '%(radius)d m. Move closer or report an exception.',
-                                    dist=distance, place=location.name, radius=radius))
+            raise OutOfRange(
+                _('You are not at your shift location. Move to %(place)s to check in or out: you are about '
+                  '%(dist)d m away and must be within %(radius)d m.', place=location.name, dist=distance, radius=radius),
+                {'place': location.name, 'client': shift.client_id.name or '', 'distance': int(distance),
+                 'radius': radius, 'map_url': location.map_url or ''})
         return distance
 
     def clock_in(self, shift_id, latitude, longitude, accuracy=0.0):
@@ -218,7 +228,11 @@ class CareClock(models.AbstractModel):
                                     minutes=early.total_seconds() // 60))
         if self.env['hr.attendance'].sudo().search_count([('binaryaid_shift_id', '=', shift.id)]):
             raise ValidationError(_('This shift already has a sign in. Report an exception if this is a mistake.'))
-        distance = self._verify_position(shift, latitude, longitude, accuracy)
+        try:
+            distance = self._verify_position(shift, latitude, longitude, accuracy)
+        except OutOfRange as error:
+            # Nothing is recorded: the dashboard shows where the worker has to be.
+            return dict(error.details, status='out_of_range', message=error.args[0])
         self.env['hr.attendance'].sudo().create({
             'employee_id': employee.id, 'check_in': now, 'binaryaid_shift_id': shift.id, 'in_mode': 'binaryaid_gps',
             'in_latitude': latitude, 'in_longitude': longitude, 'binaryaid_in_distance_m': distance,
@@ -269,3 +283,12 @@ class CareClock(models.AbstractModel):
             'requested_time': when, 'reason': reason.strip()[:2000], 'latitude': latitude or 0.0,
             'longitude': longitude or 0.0, 'accuracy_m': accuracy or 0.0, 'distance_m': distance})
         return record
+
+
+class HrEmployee(models.Model):
+    _inherit = 'hr.employee'
+
+    def _attendance_action_change(self, geo_information=None):
+        """Odoo's own check in (top bar button and kiosk) has no shift location check, so it is closed:
+        employees check in and out from their dashboard, at their assigned shift location."""
+        raise UserError(_('Check in and check out from your HRMS dashboard, at the location of your assigned shift.'))

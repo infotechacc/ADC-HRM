@@ -53,8 +53,13 @@ class TestCareClock(TransactionCase):
     def test_clock_in_rules(self):
         board = self.dashboard.with_user(self.worker_user)
         self.assertEqual(board.get_overview()['clock']['action'], 'in')
-        with self.assertRaises(ValidationError):
-            board.care_clock_in(self.shift.id, *FAR, 5)
+        # Outside the clock radius: nothing is recorded and the dashboard gets the location to show in a pop-up.
+        result = board.care_clock_in(self.shift.id, *FAR, 5)
+        self.assertEqual(result['status'], 'out_of_range')
+        self.assertEqual((result['place'], result['radius']), (self.location.name, 50))
+        self.assertGreater(result['distance'], 50)
+        self.assertIn('Move to', result['message'])
+        self.assertFalse(self.shift.attendance_ids)
         with self.assertRaises(ValidationError):
             board.care_clock_in(self.shift.id, *NEAR, 500)  # imprecise reading
         with self.assertRaises(AccessError):
@@ -66,6 +71,10 @@ class TestCareClock(TransactionCase):
         self.assertEqual(attendance.in_mode, 'binaryaid_gps')
         self.assertLess(attendance.binaryaid_in_distance_m, 50)
         self.assertTrue(board.care_is_signed_in())
+        # Odoo's own top bar / kiosk check in has no shift location check and is refused.
+        with self.assertRaises(UserError):
+            self.other.with_user(self.other_user).sudo()._attendance_action_change()
+        self.assertFalse(self.env['hr.attendance'].search([('employee_id', '=', self.other.id)]))
         self.assertEqual(board.get_overview()['clock']['action'], 'out')
 
     def test_window_and_missing_coordinates(self):
@@ -221,7 +230,8 @@ class TestCareClockBrowser(HttpCase):
         setup_care(self)
         self.browser_js('/odoo', """
           (async () => {
-            navigator.geolocation.getCurrentPosition = (ok) => ok({coords: {latitude: %s, longitude: %s, accuracy: 6}});
+            // First tap from about 130 m away: a pop-up asks the worker to move to the shift location.
+            navigator.geolocation.getCurrentPosition = (ok) => ok({coords: {latitude: -33.8700, longitude: 151.2093, accuracy: 6}});
             const wait = async (fn, label) => {
                 for (let i = 0; i < 200; i++) {
                     const value = fn();
@@ -235,6 +245,13 @@ class TestCareClockBrowser(HttpCase):
             // Both buttons are always shown; only the one that applies is enabled.
             await wait(() => byText('.ba_clock_btn', 'Check In') && byText('.ba_clock_btn', 'Check Out'), 'both buttons');
             if (enabled('Check Out')) throw new Error('Check Out enabled before Check In');
+            (await wait(() => enabled('Check In'), 'check in button')).click();
+            const popup = await wait(() => document.querySelector('.modal .ba_location_dialog'), 'location pop-up');
+            if (!popup.textContent.includes('Home') || !popup.textContent.includes('50 m')) throw new Error('Location details missing');
+            byText('.modal button', 'OK').click();
+            await wait(() => !document.querySelector('.modal'), 'pop-up closed');
+            if (enabled('Check Out')) throw new Error('Checked in from outside the location');
+            navigator.geolocation.getCurrentPosition = (ok) => ok({coords: {latitude: %s, longitude: %s, accuracy: 6}});
             (await wait(() => enabled('Check In'), 'check in button')).click();
             (await wait(() => enabled('Check Out'), 'check out button')).click();
             await wait(() => document.querySelector('.modal textarea'), 'note dialog');

@@ -129,6 +129,12 @@ export class CareNoteDialog extends Component {
     }
 }
 
+export class CareLocationDialog extends Component {
+    static template = "binaryaid_care_attendance.LocationDialog";
+    static components = { Dialog };
+    static props = ["result", "close"];
+}
+
 export class CareExceptionDialog extends Component {
     static template = "binaryaid_care_attendance.ExceptionDialog";
     static components = { Dialog, CareExceptionForm };
@@ -193,6 +199,11 @@ patch(HrmsDashboard.prototype, {
             const result = await this.orm.call("binaryaid.hrms.dashboard", "care_clock_in", [
                 clock.shift_id, coords.latitude, coords.longitude, coords.accuracy,
             ]);
+            if (result.status === "out_of_range") {
+                // Not checked in: show where the worker has to be.
+                this.dialogService.add(CareLocationDialog, { result });
+                return;
+            }
             this.notification.add(result.message, { type: result.status === "ok" ? "success" : "info" });
             await this.load();
         } catch (error) {

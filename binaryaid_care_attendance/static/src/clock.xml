@@ -112,6 +112,27 @@
         </Dialog>
     </t>
 
+    <t t-name="binaryaid_care_attendance.LocationDialog">
+        <Dialog title="'Move to your shift location'" size="'md'">
+            <div class="ba_location_dialog">
+                <div class="ba_location_icon" aria-hidden="true"><i class="fa fa-map-marker"/></div>
+                <p class="ba_location_lead">You can only check in at the location of your assigned shift. Go to the address below, then tap <strong>Check In</strong> again.</p>
+                <div class="ba_location_place">
+                    <span t-if="props.result.client" class="ba_location_client" t-esc="props.result.client"/>
+                    <strong t-esc="props.result.place"/>
+                </div>
+                <div class="ba_location_facts">
+                    <span><span class="ba_location_value ba_num"><t t-esc="props.result.distance"/> m</span>you are away</span>
+                    <span><span class="ba_location_value ba_num"><t t-esc="props.result.radius"/> m</span>allowed radius</span>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <a t-if="props.result.map_url" t-att-href="props.result.map_url" target="_blank" rel="noopener" class="btn btn-primary"><i class="fa fa-location-arrow me-2" aria-hidden="true"/>Open directions</a>
+                <button class="btn btn-secondary" t-on-click="props.close">OK</button>
+            </t>
+        </Dialog>
+    </t>
+
     <t t-name="binaryaid_care_attendance.ExceptionDialog">
         <Dialog title="props.clockType === 'in' ? 'Report a sign in problem' : 'Report a sign out problem'">
             <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
