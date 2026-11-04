@@ -21,7 +21,6 @@
                     <span t-if="d.clock.note_draft" class="ba_clock_line text-muted"><i class="fa fa-pencil me-1" aria-hidden="true"/>Your shift note draft is saved.</span>
                     <t t-call="binaryaid_care_attendance.ClockButtons"/>
                     <span t-if="d.clock.action === 'blocked'" class="ba_clock_line text-muted d-block mt-2">You are signed in to another shift. Check out of that shift first.</span>
-                    <p t-if="clockState.error" class="alert alert-danger mb-0 mt-2 py-2" role="alert" t-esc="clockState.error"/>
                     <button type="button" class="btn btn-link ba_clock_link" t-on-click="() => this.reportClockException(d.clock.action === 'out' ? 'out' : 'in')">Can't check <t t-esc="d.clock.action === 'out' ? 'out' : 'in'"/>? Report a problem</button>
                     </div>
                 </t>

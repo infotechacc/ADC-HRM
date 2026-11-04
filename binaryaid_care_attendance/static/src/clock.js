@@ -1,5 +1,6 @@
 /** @odoo-module **/
 import { Component, onWillStart, useState } from "@odoo/owl";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { Dialog } from "@web/core/dialog/dialog";
 import { _t } from "@web/core/l10n/translation";
 import { serializeDateTime } from "@web/core/l10n/dates";
@@ -188,12 +189,11 @@ patch(HrmsDashboard.prototype, {
     setup() {
         super.setup(...arguments);
         this.dialogService = useService("dialog");
-        this.clockState = useState({ busy: false, error: "" });
+        this.clockState = useState({ busy: false });
     },
     async clockIn() {
         const clock = this.state.data.clock;
         this.clockState.busy = true;
-        this.clockState.error = "";
         try {
             const coords = await readPosition();
             const result = await this.orm.call("binaryaid.hrms.dashboard", "care_clock_in", [
@@ -207,13 +207,15 @@ patch(HrmsDashboard.prototype, {
             this.notification.add(result.message, { type: result.status === "ok" ? "success" : "info" });
             await this.load();
         } catch (error) {
-            this.clockState.error = errorText(error);
+            // Shown in a pop-up the worker closes, not left under the buttons.
+            this.dialogService.add(AlertDialog, {
+                title: _t("Check In not recorded"), body: errorText(error), confirmLabel: _t("OK"),
+            });
         } finally {
             this.clockState.busy = false;
         }
     },
     clockOut() {
-        this.clockState.error = "";
         this.dialogService.add(CareNoteDialog, { clock: this.state.data.clock, onDone: () => this.load() });
     },
     reportClockException(clockType) {

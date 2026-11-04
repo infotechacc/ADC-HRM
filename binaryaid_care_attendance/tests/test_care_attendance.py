@@ -245,6 +245,15 @@ class TestCareClockBrowser(HttpCase):
             // Both buttons are always shown; only the one that applies is enabled.
             await wait(() => byText('.ba_clock_btn', 'Check In') && byText('.ba_clock_btn', 'Check Out'), 'both buttons');
             if (enabled('Check Out')) throw new Error('Check Out enabled before Check In');
+            // A location that cannot be read: the message is a pop-up that closes with OK.
+            const farGps = navigator.geolocation.getCurrentPosition;
+            navigator.geolocation.getCurrentPosition = (ok, fail) => fail({code: 2});
+            (await wait(() => enabled('Check In'), 'check in button')).click();
+            const alert = await wait(() => byText('.modal', 'Check In not recorded'), 'error pop-up');
+            byText('.modal button', 'OK').click();
+            await wait(() => !document.querySelector('.modal'), 'error pop-up closed');
+            if (document.querySelector('.ba_clock_card .alert')) throw new Error('Message left under the buttons');
+            navigator.geolocation.getCurrentPosition = farGps;
             (await wait(() => enabled('Check In'), 'check in button')).click();
             const popup = await wait(() => document.querySelector('.modal .ba_location_dialog'), 'location pop-up');
             if (!popup.textContent.includes('Home') || !popup.textContent.includes('50 m')) throw new Error('Location details missing');
