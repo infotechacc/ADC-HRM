@@ -33,6 +33,14 @@ function errorText(error) {
     return error?.data?.message || error?.message || _t("Something went wrong. Please try again.");
 }
 
+/** OpenStreetMap embed with a pin on the location, about 400 m across. */
+export function mapEmbedUrl(latitude, longitude) {
+    const dLat = 0.0022;
+    const dLon = 0.0032;
+    const bbox = [longitude - dLon, latitude - dLat, longitude + dLon, latitude + dLat].map((v) => v.toFixed(6)).join(",");
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${latitude.toFixed(6)},${longitude.toFixed(6)}`;
+}
+
 function newToken() {
     return window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -134,6 +142,9 @@ export class CareLocationDialog extends Component {
     static template = "binaryaid_care_attendance.LocationDialog";
     static components = { Dialog };
     static props = ["result", "close"];
+    mapEmbedUrl(latitude, longitude) {
+        return mapEmbedUrl(latitude, longitude);
+    }
 }
 
 export class CareExceptionDialog extends Component {
@@ -214,6 +225,9 @@ patch(HrmsDashboard.prototype, {
         } finally {
             this.clockState.busy = false;
         }
+    },
+    mapEmbedUrl(latitude, longitude) {
+        return mapEmbedUrl(latitude, longitude);
     },
     clockOut() {
         this.dialogService.add(CareNoteDialog, { clock: this.state.data.clock, onDone: () => this.load() });

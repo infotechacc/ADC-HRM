@@ -17,6 +17,10 @@
                         </span>
                     </div>
                     <div class="ba_clock_body">
+                    <t t-call="binaryaid_care_attendance.LocationMap">
+                        <t t-set="mapLat" t-value="d.clock.latitude"/><t t-set="mapLon" t-value="d.clock.longitude"/>
+                        <t t-set="mapLabel" t-value="d.clock.address or d.clock.location"/><t t-set="mapLink" t-value="d.clock.map_url"/>
+                    </t>
                     <p t-if="d.clock.plan" class="ba_clock_plan"><span class="ba_eyebrow d-block">Shift plan</span><t t-esc="d.clock.plan"/></p>
                     <span t-if="d.clock.note_draft" class="ba_clock_line text-muted"><i class="fa fa-pencil me-1" aria-hidden="true"/>Your shift note draft is saved.</span>
                     <t t-call="binaryaid_care_attendance.ClockButtons"/>
@@ -36,11 +40,24 @@
                             <span t-if="next.address or next.location" class="text-muted"><i class="fa fa-map-marker me-1" aria-hidden="true"/><t t-esc="next.address or next.location"/></span>
                         </span>
                     </div>
+                    <t t-if="next" t-call="binaryaid_care_attendance.LocationMap">
+                        <t t-set="mapLat" t-value="next.latitude"/><t t-set="mapLon" t-value="next.longitude"/>
+                        <t t-set="mapLabel" t-value="next.address or next.location"/><t t-set="mapLink" t-value="next.map_url"/>
+                    </t>
                     <t t-call="binaryaid_care_attendance.ClockButtons"/>
                     <span class="ba_clock_line text-muted d-block mt-2">Check In opens <t t-esc="d.clock.early"/> minutes before your next published shift.</span></div>
                 </t>
             </section>
         </xpath>
+    </t>
+
+    <!-- Map of a shift location (OpenStreetMap, no account or key needed). -->
+    <t t-name="binaryaid_care_attendance.LocationMap">
+        <div t-if="mapLat or mapLon" class="ba_location_map">
+            <iframe t-att-src="mapEmbedUrl(mapLat, mapLon)" t-att-title="'Map of ' + (mapLabel or 'the shift location')"
+                    loading="lazy" referrerpolicy="no-referrer"/>
+            <a t-if="mapLink" t-att-href="mapLink" target="_blank" rel="noopener" class="ba_location_map_link"><i class="fa fa-location-arrow me-1" aria-hidden="true"/>Directions</a>
+        </div>
     </t>
 
     <!-- Check In and Check Out are always both shown; only the one that applies now is enabled. -->
@@ -120,6 +137,10 @@
                     <span t-if="props.result.client" class="ba_location_client" t-esc="props.result.client"/>
                     <strong t-esc="props.result.place"/>
                 </div>
+                <t t-call="binaryaid_care_attendance.LocationMap">
+                    <t t-set="mapLat" t-value="props.result.latitude"/><t t-set="mapLon" t-value="props.result.longitude"/>
+                    <t t-set="mapLabel" t-value="props.result.place"/>
+                </t>
                 <div class="ba_location_facts">
                     <span><span class="ba_location_value ba_num"><t t-esc="props.result.distance"/> m</span>you are away</span>
                     <span><span class="ba_location_value ba_num"><t t-esc="props.result.radius"/> m</span>allowed radius</span>

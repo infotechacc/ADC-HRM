@@ -33,3 +33,7 @@
 .ba_location_facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;
     > span { display: flex; flex-direction: column; padding: 10px; border: 1px solid #e4e7ec; border-radius: 10px; color: #667085; font-size: 12px; } }
 .ba_location_value { color: #101828; font-size: 20px; font-weight: 700; }
+.ba_location_map { position: relative; width: 100%; margin-top: 10px; border: 1px solid #e4e7ec; border-radius: 12px; overflow: hidden; background: #eef2f6;
+    iframe { display: block; width: 100%; height: 200px; border: 0; } }
+.ba_location_map_link { position: absolute; right: 8px; bottom: 8px; padding: 4px 10px; border-radius: 999px; background: #fff;
+    box-shadow: 0 1px 4px rgba(16, 24, 40, .2); font-size: 12px; font-weight: 600; }

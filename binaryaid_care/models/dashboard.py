@@ -90,6 +90,8 @@ class HrmsDashboard(models.AbstractModel):
             item['plan'] = (shift.instructions or '').strip()
             item['address'] = location.name or ''
             item['map_url'] = location.map_url or ''
+            item['latitude'] = location.latitude
+            item['longitude'] = location.longitude
         if self.env.user.employee_id and not data['admin']:
             unread = (data.get('messages') or {}).get('unread', 0)
             data['worker_nav'] = [

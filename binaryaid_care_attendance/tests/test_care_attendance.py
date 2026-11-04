@@ -52,7 +52,9 @@ class TestCareClock(TransactionCase):
 
     def test_clock_in_rules(self):
         board = self.dashboard.with_user(self.worker_user)
-        self.assertEqual(board.get_overview()['clock']['action'], 'in')
+        clock = board.get_overview()['clock']
+        self.assertEqual(clock['action'], 'in')
+        self.assertEqual((clock['latitude'], clock['longitude'], clock['radius']), (LAT, LON, 50))
         # Outside the clock radius: nothing is recorded and the dashboard gets the location to show in a pop-up.
         result = board.care_clock_in(self.shift.id, *FAR, 5)
         self.assertEqual(result['status'], 'out_of_range')
@@ -257,6 +259,9 @@ class TestCareClockBrowser(HttpCase):
             (await wait(() => enabled('Check In'), 'check in button')).click();
             const popup = await wait(() => document.querySelector('.modal .ba_location_dialog'), 'location pop-up');
             if (!popup.textContent.includes('Home') || !popup.textContent.includes('50 m')) throw new Error('Location details missing');
+            const map = popup.querySelector('.ba_location_map iframe');
+            if (!map || !map.src.includes('openstreetmap.org') || !map.src.includes('marker=-33.868800,151.209300')) throw new Error('Location map missing');
+            if (!document.querySelector('.ba_clock_card .ba_location_map iframe')) throw new Error('No map on the attendance card');
             byText('.modal button', 'OK').click();
             await wait(() => !document.querySelector('.modal'), 'pop-up closed');
             if (enabled('Check Out')) throw new Error('Checked in from outside the location');

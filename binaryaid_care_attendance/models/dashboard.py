@@ -57,6 +57,8 @@ class HrmsDashboard(models.AbstractModel):
             'location': shift.service_location_id.name or shift.location or '',
             'address': shift.service_location_id.name or '',
             'map_url': shift.service_location_id.map_url or '', 'plan': (shift.instructions or '').strip(),
+            'latitude': shift.service_location_id.latitude, 'longitude': shift.service_location_id.longitude,
+            'radius': shift.service_location_id.radius_m or 0,
             'early': early,
             'since': format_datetime(self.env, attendance.check_in, tz=tz, dt_format='HH:mm') if signed_in else '',
             'note_draft': note.state == 'draft' if note else False, 'pending_exception': bool(pending),
