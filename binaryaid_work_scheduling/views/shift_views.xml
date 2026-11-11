@@ -17,7 +17,7 @@
     <record id="view_shift_kanban" model="ir.ui.view">
         <field name="name">binaryaid.work.shift.kanban</field><field name="model">binaryaid.work.shift</field>
         <field name="arch" type="xml">
-            <kanban create="false" default_order="start" sample="1">
+            <kanban create="false" default_order="start">
                 <field name="state"/>
                 <templates>
                     <t t-name="card" class="flex-row align-items-center">
@@ -73,7 +73,8 @@
         <field name="name">binaryaid.work.shift.search</field><field name="model">binaryaid.work.shift</field>
         <field name="arch" type="xml"><search><field name="name"/><field name="employee_name"/><filter name="mine" string="My Shifts" domain="[('user_id', '=', uid)]"/><filter name="published" string="Published" domain="[('state', '=', 'published')]"/><filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/><filter name="upcoming" string="Upcoming" domain="[('end', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/><filter name="start" string="Shift Date" date="start"/><group><filter name="employee" string="Employee" context="{'group_by': 'employee_name'}"/><filter name="week" string="Week" context="{'group_by': 'start:week'}"/></group></search></field>
     </record>
-    <record id="action_work_schedule" model="ir.actions.act_window"><field name="name">Weekly Work Schedule</field><field name="res_model">binaryaid.work.shift</field><field name="view_mode">list,kanban,calendar,form</field></record>
+    <record id="action_work_schedule" model="ir.actions.act_window"><field name="name">Shifts</field><field name="res_model">binaryaid.work.shift</field><field name="view_mode">list,kanban,calendar,form</field>
+        <field name="help" type="html"><p class="o_view_nocontent_empty_folder">No shifts found</p><p>Shifts are created from the HRMS Dashboard calendar.</p></field></record>
     <record id="action_publish_shifts" model="ir.actions.server">
         <field name="name">Publish Shifts</field>
         <field name="model_id" ref="model_binaryaid_work_shift"/>

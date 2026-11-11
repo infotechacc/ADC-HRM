@@ -250,7 +250,9 @@ class HrmsDashboard(models.AbstractModel):
             # Employees: their own shifts as cards, upcoming first.
             action.update(name=_('My shifts'), display_name=_('My shifts'),
                           domain=action['domain'] + [('user_id', '=', self.env.uid)],
-                          context={'search_default_upcoming': 1})
+                          context={'search_default_upcoming': 1},
+                          help=_('<p class="o_view_nocontent_empty_folder">No upcoming shifts</p>'
+                                 '<p>Your published shifts appear here. Remove the Upcoming filter to see past shifts.</p>'))
             kanban = self.env.ref('binaryaid_work_scheduling.view_shift_kanban').id
             action['views'] = [(kanban, 'kanban'), (False, 'list'), (False, 'calendar'), (False, 'form')]
             action['view_mode'] = 'kanban,list,calendar,form'
