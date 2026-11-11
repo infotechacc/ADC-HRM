@@ -1,5 +1,5 @@
 /** @odoo-module **/
-import { Component, onWillStart, useRef, useState } from "@odoo/owl";
+import { Component, markup, onWillStart, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
@@ -57,6 +57,10 @@ export class HrmsDashboard extends Component {
     async navigate(method, value) {
         try {
             const action = await this.orm.call("binaryaid.hrms.dashboard", method, [value]);
+            if (typeof action.help === "string") {
+                // Odoo formats help only for actions it loads by id; these come from the server as plain text.
+                action.help = markup(action.help);
+            }
             await this.action.doAction(action);
         } catch {
             this.notification.add(_t("This section could not be opened. Please refresh or check your access."), { type: "warning" });
