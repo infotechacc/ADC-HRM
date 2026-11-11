@@ -1,0 +1,16 @@
+// My shifts cards: spaced, rounded cards on every screen size (Odoo stacks kanban cards edge to edge on phones).
+.o_ba_shift_kanban.o_kanban_ungrouped,
+.o_ba_shift_kanban .o_kanban_ungrouped {
+    gap: 12px;
+    padding: 12px !important;
+
+    .o_kanban_record {
+        margin: 0 !important;
+    }
+    .o_kanban_record:not(.o_kanban_ghost) {
+        border: 1px solid $border-color !important;
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+        overflow: hidden;
+    }
+}
