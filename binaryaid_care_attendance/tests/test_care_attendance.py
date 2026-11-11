@@ -73,6 +73,9 @@ class TestCareClock(TransactionCase):
         self.assertEqual(attendance.in_mode, 'binaryaid_gps')
         self.assertLess(attendance.binaryaid_in_distance_m, 50)
         self.assertTrue(board.care_is_signed_in())
+        # Recorded work keeps the shift: it can be cancelled, not deleted.
+        with self.assertRaisesRegex(ValidationError, 'check in'):
+            self.shift.with_user(self.admin).unlink()
         # Odoo's own top bar / kiosk check in has no shift location check and is refused.
         with self.assertRaises(UserError):
             self.other.with_user(self.other_user).sudo()._attendance_action_change()

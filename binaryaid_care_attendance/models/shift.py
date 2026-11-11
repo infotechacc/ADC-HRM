@@ -28,3 +28,13 @@ class WorkShift(models.Model):
         if operator in ('!=', 'not in'):
             domain = ['!'] + domain
         return domain
+
+    def _deletion_blockers(self):
+        blockers = super()._deletion_blockers()
+        if self.env['hr.attendance'].sudo().search_count([('binaryaid_shift_id', '=', self.id)]):
+            blockers.append(_('a check in'))
+        if self.env['binaryaid.care.shift.note'].sudo().search_count([('shift_id', '=', self.id)]):
+            blockers.append(_('a shift note'))
+        if self.env['binaryaid.care.attendance.exception'].sudo().search_count([('shift_id', '=', self.id)]):
+            blockers.append(_('a clock exception'))
+        return blockers

@@ -283,7 +283,7 @@ class HrmsDashboard(models.AbstractModel):
         self._check_user()
         shift = self._attention_record(source, res_id)
         if name == 'open':
-            return self._dialog(shift, view=self._shift_form_view(shift))
+            return dict(self._dialog(shift, view=self._shift_form_view(shift)), context={'binaryaid_dialog': True})
         raise AccessError(_('This action is not available for this item.'))
 
     @api.model

@@ -63,15 +63,14 @@ class TestWorkScheduling(TransactionCase):
     def test_revision_retains_history(self):
         shift = self.shift()
         shift.action_publish()
+        # Times of a published shift can be edited directly; other details need Revise.
         with self.assertRaises(ValidationError):
-            shift.write({'start': '2027-01-11 21:00:00'})
+            shift.write({'location': 'Elsewhere'})
         with self.assertRaises(ValidationError):
             shift.action_revise()
         shift.write({'change_reason': 'Consulted employee about new start time'})
         shift.action_revise()
         self.assertFalse(self.shifts.with_user(self.alice).search([('id', '=', shift.id)]))
-        with self.assertRaises(ValidationError):
-            shift.unlink()
         shift.write({'start': '2027-01-11 21:00:00'})
         shift.action_publish()
         shift.write({'change_reason': 'Site closure discussed with employee'})

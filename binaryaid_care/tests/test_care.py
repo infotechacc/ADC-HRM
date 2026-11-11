@@ -54,6 +54,11 @@ class TestCareClients(CareCase):
         self.assertEqual((self.location.name, self.location.latitude, self.location.radius_m), ('22 High St, Penrith', -33.75, 80))
         with self.assertRaises(ValidationError):
             client.radius_m = 0
+        # Any time zone in the world, and any positive radius, including decimals and large values.
+        client.write({'timezone': 'Europe/London', 'radius_m': 2500.5})
+        self.assertEqual((self.location.timezone, self.location.radius_m), ('Europe/London', 2500.5))
+        self.assertIn(('America/New_York', 'America/New_York'),
+                      self.env['binaryaid.care.client']._fields['timezone'].selection)
         client.write({'contact_name': 'Helen', 'contact_phone': '0411 000 000', 'contact_email': 'helen@example.com'})
         self.assertEqual((client.contact_name, client.contact_phone), ('Helen', '0411 000 000'))
 
@@ -188,6 +193,31 @@ class TestCareRoster(CareCase):
         with self.assertRaises(ValidationError):
             self.shift(client=self.other_client, service_location_id=self.location.id)
 
+    def test_delete_and_retime_shifts(self):
+        draft = self.shift(days=6)
+        draft.with_user(self.admin).unlink()
+        self.assertFalse(draft.exists())
+        published = self.shift(days=7)
+        published.action_publish()
+        # The time of a published shift can be changed directly; the worker is told.
+        new_start = published.start + timedelta(hours=1)
+        published.with_user(self.admin).write({'start': new_start, 'end': new_start + timedelta(hours=4)})
+        self.assertEqual((published.state, published.start), ('published', new_start))
+        self.assertIn('Shift time changed', published.message_ids[0].body)
+        self.assertIn(self.alice_user.partner_id, published.message_ids[0].partner_ids)
+        with self.assertRaises(ValidationError):
+            published.with_user(self.admin).write({'name': 'Other details still need Revise'})
+        other = self.shift(days=8)
+        other.action_publish()
+        with self.assertRaises(ValidationError):
+            other.with_user(self.admin).write({'start': published.start, 'end': published.end})
+        # A published shift without recorded work can be deleted.
+        published.with_user(self.admin).unlink()
+        self.assertFalse(published.exists())
+        self.assertTrue(self.env['binaryaid.roster.event'].sudo().search([('event', '=', 'deleted'), ('shift_id', '=', False)]))
+        with self.assertRaises(AccessError):
+            other.with_user(self.alice_user).unlink()
+
     def test_concurrent_edit_protection(self):
         shift = self.shift()
         token = shift.binaryaid_revision_token
@@ -228,8 +258,10 @@ class TestCareMessagesAndProfile(CareCase):
         mine.action_acknowledge()
         self.assertEqual((message.read_count, message.ack_count), (1, 1))
         overview = self.env['binaryaid.hrms.dashboard'].with_user(self.bob_user).get_overview()
-        self.assertEqual(overview['messages']['unread'], 1)
-        self.assertIn('messages', {card['key'] for card in overview['cards']})
+        # No messages panel or figure on the employee dashboard: the menu link shows the unread count.
+        self.assertNotIn('messages', overview)
+        self.assertNotIn('messages', {card['key'] for card in overview['cards']})
+        self.assertEqual(next(l for l in overview['worker_nav'] if l['key'] == 'team_messages')['badge'], 1)
         draft = self.env['binaryaid.care.announcement'].with_user(self.admin).create({'title': 'Draft', 'body': '<p>x</p>'})
         self.assertFalse(self.env['binaryaid.care.announcement'].with_user(self.alice_user).search([('id', '=', draft.id)]))
 

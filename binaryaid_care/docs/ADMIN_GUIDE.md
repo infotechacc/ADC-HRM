@@ -50,8 +50,12 @@ buttons). Create from the dashboard (button or calendar day). Choose the client 
 service location and care plans appear. *Save* keeps a draft; *Publish*
 notifies the worker. Publishing is blocked for overlapping shifts, approved leave,
 inactive employees or clients, and asks for a manager note when documents are
-missing/expired or a location has no coordinates. Published changes: *Revise* or
-*Cancel* with a reason, or *Replace / Swap*.
+missing/expired or a location has no coordinates. A published shift's start and end
+time can be edited directly (the worker is notified); other details need *Revise* or
+*Cancel* with a reason, or *Replace / Swap*. *Delete* (in the shift pop-up, or ⚙ ▸ Delete)
+removes a shift that has no check in, shift note, clock exception, timesheet or approved
+hours yet; the worker is told if it was published. Shifts with recorded work are cancelled
+instead.
 
 ## Timesheets (every fortnight)
 Timesheets are prepared automatically. Open *Timesheets* on the dashboard:

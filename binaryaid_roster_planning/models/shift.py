@@ -87,10 +87,23 @@ class WorkShift(models.Model):
             self._roster_event('edited')
         return result
 
+    def _deletion_blockers(self):
+        blockers = super()._deletion_blockers()
+        if self.roster_actual_ids:
+            blockers.append(_('approved actual hours'))
+        if self.roster_replacement_for_id or self.search_count([('roster_replacement_for_id', '=', self.id)]):
+            blockers.append(_('a linked replacement or swap'))
+        return blockers
+
     def unlink(self):
-        if any(s.roster_assignment_id or s.roster_replacement_for_id or s.roster_event_ids for s in self):
-            raise ValidationError(_('Keep roster records for history; cancel instead of deleting them.'))
+        # The audit trail outlives the shift: its events keep their snapshot, plus a 'deleted' event.
+        self._roster_event('deleted')
         return super().unlink()
+
+    def _check_published_time_change(self, before):
+        super()._check_published_time_change(before)
+        # Approved leave, inactive employees and clients are checked as when publishing.
+        self.filtered(lambda s: s.end > fields.Datetime.now())._check_publication_eligibility()
 
     @api.depends('roster_actual_ids')
     def _compute_roster_actual(self):

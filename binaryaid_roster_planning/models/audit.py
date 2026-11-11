@@ -7,7 +7,8 @@ class RosterEvent(models.Model):
     _description = 'Immutable Roster Event Snapshot'
     _order = 'id desc'
 
-    shift_id = fields.Many2one('binaryaid.work.shift', required=True, ondelete='restrict', index=True)
+    # Kept when a shift is deleted: the snapshot still shows what it was.
+    shift_id = fields.Many2one('binaryaid.work.shift', ondelete='set null', index=True)
     company_id = fields.Many2one('res.company', required=True, index=True)
     employee_id = fields.Many2one('hr.employee', ondelete='restrict')
     user_id = fields.Many2one('res.users', ondelete='restrict', index=True)

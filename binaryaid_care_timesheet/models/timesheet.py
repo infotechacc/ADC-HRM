@@ -358,3 +358,13 @@ class CareTimesheetLine(models.Model):
         self.ensure_one()
         return {'type': 'ir.actions.act_window', 'res_model': 'binaryaid.work.shift', 'res_id': self.shift_id.id,
                 'view_mode': 'form', 'target': 'new'}
+
+
+class WorkShift(models.Model):
+    _inherit = 'binaryaid.work.shift'
+
+    def _deletion_blockers(self):
+        blockers = super()._deletion_blockers()
+        if self.env['binaryaid.care.timesheet.line'].sudo().search_count([('shift_id', '=', self.id)]):
+            blockers.append(_('a timesheet line'))
+        return blockers

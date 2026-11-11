@@ -4,6 +4,10 @@ import pytz
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
+from odoo.tools import format_datetime
+
+# Fields an administrator may change on a published shift without revising it.
+PUBLISHED_EDITABLE = {'start', 'end', 'timezone', 'change_reason'}
 
 
 class WorkShift(models.Model):
@@ -67,15 +71,62 @@ class WorkShift(models.Model):
         self.invalidate_recordset(['state'])
         if set(vals) & {'state', 'published_at'}:
             raise AccessError(_('Use the publish, revise or cancel actions to change shift status.'))
-        if self.filtered(lambda s: s.state != 'draft') and set(vals) - {'change_reason'}:
-            raise ValidationError(_('Revise a published shift before changing its details.'))
+        locked = self.filtered(lambda s: s.state != 'draft')
+        if locked and set(vals) - {'change_reason'}:
+            # A published shift's time can be changed directly; other details need Revise.
+            if locked.filtered(lambda s: s.state != 'published') or set(vals) - PUBLISHED_EDITABLE:
+                raise ValidationError(_('Revise a published shift before changing its details.'))
+            before = {shift.id: (shift.start, shift.end) for shift in locked}
+            result = super().write(vals)
+            locked._check_published_time_change(before)
+            return result
         return super().write(vals)
+
+    def _check_published_time_change(self, before):
+        """Keep a re-timed published shift valid and tell the worker."""
+        for shift in self:
+            if shift.end <= shift.start:
+                raise ValidationError(_('End must follow start.'))
+            if self.search_count([('employee_id', '=', shift.employee_id.id), ('id', '!=', shift.id),
+                                  ('state', '=', 'published'), ('start', '<', shift.end), ('end', '>', shift.start)]):
+                raise ValidationError(_('This employee already has an overlapping published shift.'))
+            old_start, old_end = before[shift.id]
+            if (old_start, old_end) != (shift.start, shift.end):
+                shift.with_context(mail_notify_force_send=False).message_post(
+                    body=_('Shift time changed from %(old)s to %(new)s.', old=shift._time_text(old_start, old_end),
+                           new=shift._time_text(shift.start, shift.end)),
+                    partner_ids=shift.user_id.partner_id.ids)
+
+    def _time_text(self, start, end):
+        self.ensure_one()
+        tz = self.timezone or 'UTC'
+        return '%s – %s' % (format_datetime(self.env, start, tz=tz, dt_format='EEE d MMM, HH:mm'),
+                            format_datetime(self.env, end, tz=tz, dt_format='HH:mm'))
+
+    def _deletion_blockers(self):
+        """Records that must stay linked to this shift (extensions add check-ins, notes, timesheets)."""
+        self.ensure_one()
+        return []
 
     def unlink(self):
         self._check_manager()
-        if any(s.state != 'draft' or s.published_at for s in self):
-            raise ValidationError(_('Keep previously published shifts for history; cancel them instead.'))
+        for shift in self:
+            blockers = shift._deletion_blockers()
+            if blockers:
+                raise ValidationError(_('"%(shift)s" cannot be deleted because it already has %(records)s. '
+                                        'Cancel the shift instead.', shift=shift.name, records=', '.join(blockers)))
+        for shift in self.filtered(lambda s: s.state == 'published' and s.user_id):
+            # The worker had this shift on their roster: tell them it is gone.
+            shift.employee_id.sudo().message_notify(
+                partner_ids=shift.user_id.partner_id.ids, subject=_('Shift removed'),
+                body=_('Your shift "%(shift)s" on %(when)s was removed from the roster.',
+                       shift=shift.name, when=shift._time_text(shift.start, shift.end)))
         return super().unlink()
+
+    def action_delete_shift(self):
+        """Delete from a shift pop-up and close it."""
+        self.unlink()
+        return {'type': 'ir.actions.act_window_close'}
 
     @api.constrains('start', 'end', 'unpaid_break_minutes', 'employee_id', 'task_ids',
                     'company_id', 'notice_hours', 'min_rest_hours', 'weekly_hours_limit')
