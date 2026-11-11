@@ -135,6 +135,14 @@ class TestWorkScheduling(TransactionCase):
         shift.action_publish()
         dashboard = self.env['binaryaid.hrms.dashboard'].with_user(self.alice)
         self.assertEqual(dashboard.open_shift(shift.id)['res_id'], shift.id)
+        action = dashboard.open_section('work_schedule')
+        self.assertEqual(action['views'][0][1], 'kanban')
+        self.assertIn(('user_id', '=', dashboard.env.uid), action['domain'])
+        card = shift.with_user(self.alice).with_context(tz='UTC')
+        self.assertEqual(card.card_day, str(shift.start.day))
+        self.assertIn(' – ', card.card_time)
+        admin_action = self.env['binaryaid.hrms.dashboard'].with_user(self.manager).open_section('work_schedule')
+        self.assertEqual(admin_action['view_mode'].split(',')[0], 'list', 'administrators keep the list first')
         with self.assertRaises(AccessError):
             dashboard.with_user(self.bob).open_shift(shift.id)
         draft = self.shift()
@@ -197,8 +205,9 @@ class TestScheduleBrowser(HttpCase):
             const button = [...document.querySelectorAll('.ba_dashboard button')]
                 .find(el => el.textContent.includes('All shifts'));
             button.click();
-            // Shifts open in the list view first; the calendar stays one click away.
-            await waitFor('.o_list_view .o_data_row');
+            // Employees see their shifts as cards first; the calendar stays one click away.
+            const shiftCard = await waitFor('.o_kanban_view .o_kanban_record:not(.o_kanban_ghost)');
+            if (!shiftCard.textContent.includes('Browser roster shift')) throw new Error('Shift card missing');
             (await waitFor('.o_switch_view.o_calendar')).click();
             await waitFor('.o_calendar_view');
             const event = await waitFor('.fc-event');

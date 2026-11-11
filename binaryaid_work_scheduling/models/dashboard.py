@@ -246,6 +246,14 @@ class HrmsDashboard(models.AbstractModel):
         self.env['binaryaid.work.shift'].check_access('read')
         action = self.env['ir.actions.actions']._for_xml_id('binaryaid_work_scheduling.action_work_schedule')
         action['domain'] = [('company_id', '=', self.env.company.id)]
+        if not self._is_shift_admin():
+            # Employees: their own shifts as cards, upcoming first.
+            action.update(name=_('My shifts'), display_name=_('My shifts'),
+                          domain=action['domain'] + [('user_id', '=', self.env.uid)],
+                          context={'search_default_upcoming': 1})
+            kanban = self.env.ref('binaryaid_work_scheduling.view_shift_kanban').id
+            action['views'] = [(kanban, 'kanban'), (False, 'list'), (False, 'calendar'), (False, 'form')]
+            action['view_mode'] = 'kanban,list,calendar,form'
         return action
 
     @api.model

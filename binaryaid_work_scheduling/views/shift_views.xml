@@ -13,6 +13,32 @@
         <field name="name">binaryaid.work.shift.calendar</field><field name="model">binaryaid.work.shift</field>
         <field name="arch" type="xml"><calendar string="Weekly Work Schedule" date_start="start" date_stop="end" color="employee_name" mode="week" event_open_popup="true" quick_create="false" create="false" edit="false" delete="false"><field name="name"/><field name="employee_name"/><field name="state"/><field name="location"/></calendar></field>
     </record>
+    <!-- Shift cards: the default view of an employee's My shifts. -->
+    <record id="view_shift_kanban" model="ir.ui.view">
+        <field name="name">binaryaid.work.shift.kanban</field><field name="model">binaryaid.work.shift</field>
+        <field name="arch" type="xml">
+            <kanban create="false" default_order="start" sample="1">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card" class="flex-row align-items-center">
+                        <div class="d-flex flex-column align-items-center justify-content-center flex-shrink-0 rounded-3 bg-100 border px-3 py-2 me-3 text-center" style="min-width: 64px;">
+                            <field name="card_weekday" class="small fw-bold text-uppercase text-muted"/>
+                            <field name="card_day" class="fs-3 fw-bold lh-1"/>
+                            <field name="card_month" class="small text-muted"/>
+                        </div>
+                        <div class="d-flex flex-column flex-grow-1 min-w-0 gap-1" name="card_body">
+                            <div class="d-flex align-items-start justify-content-between gap-2">
+                                <field name="name" class="fw-bold text-truncate"/>
+                                <field name="state" widget="badge" decoration-success="state == 'published'" decoration-info="state == 'draft'" decoration-muted="state == 'cancelled'"/>
+                            </div>
+                            <div><i class="fa fa-clock-o me-2 text-muted" title="Time"/><field name="card_time"/></div>
+                            <div t-if="record.location.raw_value" class="text-muted text-truncate"><i class="fa fa-map-marker me-2" title="Location"/><field name="location"/></div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
     <record id="view_shift_form" model="ir.ui.view">
         <field name="name">binaryaid.work.shift.form</field><field name="model">binaryaid.work.shift</field>
         <field name="arch" type="xml">
@@ -45,9 +71,9 @@
     </record>
     <record id="view_shift_search" model="ir.ui.view">
         <field name="name">binaryaid.work.shift.search</field><field name="model">binaryaid.work.shift</field>
-        <field name="arch" type="xml"><search><field name="name"/><field name="employee_name"/><filter name="mine" string="My Shifts" domain="[('user_id', '=', uid)]"/><filter name="published" string="Published" domain="[('state', '=', 'published')]"/><filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/><filter name="start" string="Shift Date" date="start"/><group><filter name="employee" string="Employee" context="{'group_by': 'employee_name'}"/><filter name="week" string="Week" context="{'group_by': 'start:week'}"/></group></search></field>
+        <field name="arch" type="xml"><search><field name="name"/><field name="employee_name"/><filter name="mine" string="My Shifts" domain="[('user_id', '=', uid)]"/><filter name="published" string="Published" domain="[('state', '=', 'published')]"/><filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/><filter name="upcoming" string="Upcoming" domain="[('end', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/><filter name="start" string="Shift Date" date="start"/><group><filter name="employee" string="Employee" context="{'group_by': 'employee_name'}"/><filter name="week" string="Week" context="{'group_by': 'start:week'}"/></group></search></field>
     </record>
-    <record id="action_work_schedule" model="ir.actions.act_window"><field name="name">Weekly Work Schedule</field><field name="res_model">binaryaid.work.shift</field><field name="view_mode">list,calendar,form</field></record>
+    <record id="action_work_schedule" model="ir.actions.act_window"><field name="name">Weekly Work Schedule</field><field name="res_model">binaryaid.work.shift</field><field name="view_mode">list,kanban,calendar,form</field></record>
     <record id="action_publish_shifts" model="ir.actions.server">
         <field name="name">Publish Shifts</field>
         <field name="model_id" ref="model_binaryaid_work_shift"/>

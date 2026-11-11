@@ -29,6 +29,11 @@ class WorkShift(models.Model):
     unpaid_break_minutes = fields.Integer(default=0, tracking=True)
     break_instructions = fields.Text(help='Specify timing and duration of paid and unpaid breaks.', tracking=True)
     planned_hours = fields.Float(compute='_compute_hours', store=True, string='Planned Paid Hours')
+    # Card labels in the viewer's time zone (kanban view of My shifts).
+    card_weekday = fields.Char(compute='_compute_card_labels')
+    card_day = fields.Char(compute='_compute_card_labels')
+    card_month = fields.Char(compute='_compute_card_labels')
+    card_time = fields.Char(compute='_compute_card_labels', string='Time')
     location = fields.Char(tracking=True)
     instructions = fields.Text(tracking=True)
     task_ids = fields.Many2many('project.task', string='Shift Tasks', check_company=True, tracking=True,
@@ -42,6 +47,23 @@ class WorkShift(models.Model):
     min_rest_hours = fields.Float(string='Rest Review Threshold (hours)', default=0, tracking=True)
     weekly_hours_limit = fields.Float(string='Weekly Hours Review Threshold', default=38, tracking=True)
     review_note = fields.Text(string='Manager Review / Consultation', tracking=True)
+
+    @api.depends('start', 'end')
+    @api.depends_context('tz')
+    def _compute_card_labels(self):
+        tz = self.env.context.get('tz') or self.env.user.tz or 'UTC'
+        for shift in self:
+            if not (shift.start and shift.end):
+                shift.card_weekday = shift.card_day = shift.card_month = shift.card_time = False
+                continue
+            shift.card_weekday = format_datetime(self.env, shift.start, tz=tz, dt_format='EEE')
+            shift.card_day = format_datetime(self.env, shift.start, tz=tz, dt_format='d')
+            shift.card_month = format_datetime(self.env, shift.start, tz=tz, dt_format='MMM')
+            overnight = format_datetime(self.env, shift.start, tz=tz, dt_format='yMd') != \
+                format_datetime(self.env, shift.end, tz=tz, dt_format='yMd')
+            shift.card_time = '%s – %s' % (format_datetime(self.env, shift.start, tz=tz, dt_format='HH:mm'),
+                                           format_datetime(self.env, shift.end, tz=tz,
+                                                           dt_format='EEE HH:mm' if overnight else 'HH:mm'))
 
     @api.depends('start', 'end', 'unpaid_break_minutes')
     def _compute_hours(self):

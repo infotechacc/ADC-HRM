@@ -50,6 +50,15 @@
             <xpath expr="//field[@name='employee_name']" position="after"><field name="client_id"/></xpath>
         </field>
     </record>
+    <record id="view_shift_care_kanban" model="ir.ui.view">
+        <field name="name">binaryaid.work.shift.care.kanban</field><field name="model">binaryaid.work.shift</field>
+        <field name="inherit_id" ref="binaryaid_work_scheduling.view_shift_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='card_body']/div[1]" position="after">
+                <div t-if="record.client_id.raw_value"><i class="fa fa-user-o me-2 text-muted" title="Client"/><field name="client_id" class="fw-semibold"/></div>
+            </xpath>
+        </field>
+    </record>
     <!-- Dashboard pop-up: one screen to plan a shift; Save draft and Publish are separate actions. -->
     <record id="view_shift_quick_form" model="ir.ui.view">
         <field name="name">binaryaid.work.shift.quick.form</field><field name="model">binaryaid.work.shift</field>
