@@ -13,6 +13,12 @@ const { DateTime } = luxon;
 /** One position reading per tap. No watchPosition: there is no continuous tracking. */
 function readPosition() {
     return new Promise((resolve, reject) => {
+        if (!window.isSecureContext) {
+            // Browsers only share location with https sites: no phone setting can change this.
+            reject(new Error(_t("Location only works when the HRMS is opened over a secure https address. " +
+                "Ask your administrator for the https link.")));
+            return;
+        }
         if (!navigator.geolocation) {
             reject(new Error(_t("This device cannot share its location.")));
             return;
