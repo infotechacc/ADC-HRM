@@ -4,6 +4,15 @@
         <xpath expr="//title" position="replace">
             <title t-esc="title or 'BinaryAid HRMS'"/>
         </xpath>
+        <xpath expr="//link[@rel='shortcut icon']" position="replace">
+            <link type="image/x-icon" rel="shortcut icon" t-att-href="x_icon or '/odoo_branding_remover/static/img/favicon.ico'"/>
+        </xpath>
+    </template>
+
+    <template id="webclient_brand_touch_icon" inherit_id="web.webclient_bootstrap">
+        <xpath expr="//link[@rel='apple-touch-icon']" position="attributes">
+            <attribute name="href">/odoo_branding_remover/static/img/icon-ios.png</attribute>
+        </xpath>
     </template>
 
     <template id="hide_brand_promotion_message" inherit_id="web.brand_promotion_message">

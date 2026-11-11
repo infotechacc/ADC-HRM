@@ -1,6 +1,6 @@
 {
     "name": "System Branding Cleanup",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.1.0",
     "category": "Tools",
     "summary": "Remove platform branding from user-facing areas",
     "description": """
