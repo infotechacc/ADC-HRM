@@ -207,7 +207,7 @@ class CareClock(models.AbstractModel):
         if distance > radius:
             raise OutOfRange(
                 _('You are not at your shift location. Move to %(place)s to check in or out: you are about '
-                  '%(dist)d m away and must be within %(radius)d m.', place=location.name, dist=distance, radius=radius),
+                  '%(dist)d m away and must be within %(radius)s m.', place=location.name, dist=distance, radius='%g' % radius),
                 {'place': location.name, 'client': shift.client_id.name or '', 'distance': int(distance),
                  'radius': radius, 'map_url': location.map_url or '',
                  'latitude': location.latitude, 'longitude': location.longitude})

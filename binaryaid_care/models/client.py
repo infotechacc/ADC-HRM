@@ -4,7 +4,8 @@ from odoo import Command, api, fields, models, _
 from odoo.exceptions import ValidationError
 
 ADMIN_GROUPS = 'binaryaid_work_management.group_work_admin,binaryaid_care.group_care_reviewer'
-TIMEZONES = [(tz, tz) for tz in pytz.all_timezones if tz.startswith('Australia/')] + [('UTC', 'UTC')]
+# Every time zone, as on shifts; Australia/Sydney stays the default.
+TIMEZONES = [(tz, tz) for tz in pytz.all_timezones]
 
 
 class CarePlan(models.Model):
@@ -55,7 +56,7 @@ class CareClient(models.Model):
     latitude = fields.Float(compute='_compute_location', inverse='_inverse_location', digits=(10, 7))
     longitude = fields.Float(compute='_compute_location', inverse='_inverse_location', digits=(10, 7))
     timezone = fields.Selection(TIMEZONES, compute='_compute_location', inverse='_inverse_location')
-    radius_m = fields.Integer(string='Clock radius (m)', compute='_compute_location', inverse='_inverse_location')
+    radius_m = fields.Float(string='Clock radius (m)', digits=(12, 2), compute='_compute_location', inverse='_inverse_location')
 
     _reference_unique = models.Constraint('UNIQUE(company_id, reference)', 'The client ID must be unique.')
 
@@ -170,7 +171,7 @@ class ServiceLocation(models.Model):
     latitude = fields.Float(digits=(10, 7))
     longitude = fields.Float(digits=(10, 7))
     timezone = fields.Selection(TIMEZONES, required=True, default='Australia/Sydney')
-    radius_m = fields.Integer(string='Clock radius (m)', default=50,
+    radius_m = fields.Float(string='Clock radius (m)', digits=(12, 2), default=50,
                               help='Maximum distance from these coordinates for check in and check out.')
     map_url = fields.Char(compute='_compute_map_url')
 
@@ -195,5 +196,5 @@ class ServiceLocation(models.Model):
         for location in self:
             if not (-90 <= location.latitude <= 90 and -180 <= location.longitude <= 180):
                 raise ValidationError(_('Latitude must be between -90 and 90 and longitude between -180 and 180.'))
-            if location.radius_m <= 0 or location.radius_m > 1000:
-                raise ValidationError(_('The clock radius must be between 1 and 1000 metres.'))
+            if location.radius_m <= 0:
+                raise ValidationError(_('The clock radius must be more than 0 metres.'))
