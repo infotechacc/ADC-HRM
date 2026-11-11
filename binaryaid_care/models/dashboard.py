@@ -1,6 +1,5 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError
-from odoo.tools import format_datetime
 
 
 class HrmsDashboard(models.AbstractModel):
@@ -31,19 +30,12 @@ class HrmsDashboard(models.AbstractModel):
                 ('company_id', '=', self.env.company.id), ('state', '=', 'draft'), ('employee_id', '=', False),
                 ('end', '>', today_start), ('start', '<', horizon_end)],
                 'fa-user-times', 'red', _('Next 14 days'))
-        if self.env.user.employee_id:
-            specs['messages'] = ('binaryaid.care.announcement', _('Unread messages'), [
-                ('state', '=', 'sent'), ('recipient_ids.user_id', '=', self.env.uid),
-                ('recipient_ids', 'any', [('user_id', '=', self.env.uid), ('read_on', '=', False)])],
-                'fa-bullhorn', 'blue', _('Team messages for you'))
         return specs
 
     def _card_keys(self, admin):
         keys = super()._card_keys(admin)
         if admin:
             keys.insert(1, 'unfilled')
-        else:
-            keys.insert(0, 'messages')
         return keys
 
     def _enrich_day_rows(self, rows, shifts):
@@ -64,24 +56,14 @@ class HrmsDashboard(models.AbstractModel):
             actions.insert(1, {'key': 'add_client', 'label': _('Add client'), 'icon': 'fa-address-card-o'})
         return actions
 
-    def _own_messages(self):
-        recipients = self.env['binaryaid.care.announcement.recipient'].search([
-            ('user_id', '=', self.env.uid), ('announcement_id.state', '=', 'sent'),
-            ('company_id', '=', self.env.company.id)], order='id desc', limit=5)
-        return {
-            'unread': self.env['binaryaid.care.announcement.recipient'].search_count([
-                ('user_id', '=', self.env.uid), ('announcement_id.state', '=', 'sent'), ('read_on', '=', False)]),
-            'items': [{'id': r.announcement_id.id, 'title': r.announcement_id.title, 'read': bool(r.read_on),
-                       'needs_ack': r.announcement_id.requires_ack and not r.acknowledged_on,
-                       'date': format_datetime(self.env, r.announcement_id.sent_on, dt_format='d MMM, HH:mm')}
-                      for r in recipients],
-        }
+    def _unread_message_count(self):
+        return self.env['binaryaid.care.announcement.recipient'].search_count([
+            ('user_id', '=', self.env.uid), ('announcement_id.state', '=', 'sent'), ('read_on', '=', False)])
 
     @api.model
     @api.readonly
     def get_overview(self):
         data = super().get_overview()
-        data['messages'] = self._own_messages() if self.env.user.employee_id else None
         for item in (data.get('schedule') or {}).get('shifts', []):
             # The worker sees client name, times, approved location and the shift plan only.
             shift = self.env['binaryaid.work.shift'].browse(item['id'])
@@ -93,7 +75,7 @@ class HrmsDashboard(models.AbstractModel):
             item['latitude'] = location.latitude
             item['longitude'] = location.longitude
         if self.env.user.employee_id and not data['admin']:
-            unread = (data.get('messages') or {}).get('unread', 0)
+            unread = self._unread_message_count()
             data['worker_nav'] = [
                 {'key': 'work_schedule', 'label': _('My shifts'), 'icon': 'fa-calendar', 'badge': 0},
                 {'key': 'team_messages', 'label': _('Team messages'), 'icon': 'fa-bullhorn', 'badge': unread},
@@ -124,23 +106,3 @@ class HrmsDashboard(models.AbstractModel):
             return {'type': 'ir.actions.act_window', 'name': _('New client'), 'res_model': 'binaryaid.care.client',
                     'views': [(False, 'form')], 'target': 'new', 'context': {'default_company_id': self.env.company.id}}
         return super().quick_action(key, date)
-
-    def _attention_record(self, source, res_id):
-        if source == 'message':
-            message = self.env['binaryaid.care.announcement'].search([
-                ('id', '=', res_id), ('state', '=', 'sent'), ('recipient_ids.user_id', '=', self.env.uid)], limit=1)
-            if not message:
-                raise AccessError(_('This message is not available to you.'))
-            return message
-        return super()._attention_record(source, res_id)
-
-    @api.model
-    def item_action(self, source, res_id, name):
-        if source != 'message':
-            return super().item_action(source, res_id, name)
-        self._check_user()
-        message = self._attention_record(source, res_id)
-        message.action_mark_read()
-        if name == 'ack':
-            return message.action_acknowledge()
-        return self._dialog(message, view=self.env.ref('binaryaid_care.view_announcement_read_form').id)

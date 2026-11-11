@@ -1,6 +1,6 @@
 {
     'name': 'BinaryAid Care Operations',
-    'version': '19.0.2.5.0',
+    'version': '19.0.2.6.0',
     'category': 'Human Resources',
     'summary': 'Clients, care plans, worker documents, team messages and care roster rules',
     'description': 'Australian Diversity Care operations: simple client records with care plans and documents, '
@@ -26,8 +26,6 @@
     'assets': {
         'web.assets_backend': [
             'binaryaid_care/static/src/shift_form.js',
-            'binaryaid_care/static/src/dashboard_care.xml',
-            'binaryaid_care/static/src/dashboard_care.scss',
         ],
     },
     'post_init_hook': '_prepare_document_slots',

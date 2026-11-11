@@ -147,7 +147,6 @@
                         </div>
                         <aside class="ba_worker_aside" aria-label="Selected day, messages and leave">
                             <t t-if="d.calendar" t-call="binaryaid_hrms_dashboard.DayCard"/>
-                            <div class="ba_worker_panels_slot"/>
                             <section t-if="d.my_leave" class="ba_card">
                                 <div class="ba_card_header"><h2>My leave</h2><button type="button" class="btn btn-link ms-auto" t-on-click="() => this.openSection('my_leave')">All requests</button></div>
                                 <div t-if="!d.my_leave.length" class="ba_empty">No upcoming or pending leave.</div>
