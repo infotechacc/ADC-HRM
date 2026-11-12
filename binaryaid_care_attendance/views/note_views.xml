@@ -27,7 +27,9 @@
         <field name="arch" type="xml">
             <list create="false" delete="false" decoration-warning="state == 'draft'">
                 <field name="note_date"/><field name="employee_id"/><field name="client_id"/><field name="shift_id"/>
-                <field name="submitted_on"/><field name="state" widget="badge" decoration-success="state == 'submitted'"/>
+                <field name="submitted_on" string="Submitted at"/>
+                <field name="amendment_ids" string="Amendments" widget="many2many_tags" optional="hide"/>
+                <field name="state" widget="badge" decoration-success="state == 'submitted'"/>
             </list>
         </field>
     </record>
@@ -36,7 +38,8 @@
         <field name="arch" type="xml">
             <form string="Shift note" create="false" delete="false" edit="false">
                 <header>
-                    <button name="action_amend" type="object" string="Add amendment" invisible="state != 'submitted'"/>
+                    <field name="can_amend" invisible="1"/>
+                    <button name="action_amend" type="object" string="Add amendment" invisible="not can_amend"/>
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
@@ -74,12 +77,26 @@
                 <filter name="submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
                 <filter name="drafts" string="Drafts" domain="[('state', '=', 'draft')]"/>
                 <filter name="date" string="Date" date="note_date"/>
+                <separator/>
+                <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                <filter name="group_client" string="Client" context="{'group_by': 'client_id'}"/>
+                <filter name="group_date" string="Date" context="{'group_by': 'note_date:day'}"/>
             </search>
         </field>
     </record>
     <record id="action_shift_notes" model="ir.actions.act_window">
         <field name="name">Shift Notes</field><field name="res_model">binaryaid.care.shift.note</field><field name="view_mode">list,form</field>
     </record>
+    <!-- Administrators: every report employees submitted when signing out of a shift. -->
+    <record id="action_shift_reports" model="ir.actions.act_window">
+        <field name="name">Shift Reports</field><field name="res_model">binaryaid.care.shift.note</field>
+        <field name="view_mode">list,form</field><field name="path">shift-reports</field>
+        <field name="context">{'search_default_submitted': 1}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">No shift reports yet</p><p>Employees fill in a short report when they sign out of a shift. Submitted reports appear here.</p></field>
+    </record>
+    <menuitem id="menu_shift_reports" name="Shift Reports" parent="binaryaid_hrms_dashboard.menu_dashboard_root"
+              action="action_shift_reports" sequence="20"
+              groups="binaryaid_work_management.group_work_admin,binaryaid_care.group_care_reviewer"/>
     <record id="action_report_missing_notes" model="ir.actions.act_window">
         <field name="name">Missing Shift Notes</field><field name="res_model">binaryaid.work.shift</field>
         <field name="view_mode">list,form</field>

@@ -81,6 +81,14 @@ class ShiftNote(models.Model):
     def unlink(self):
         raise AccessError(_('Shift notes are kept for history.'))
 
+    can_amend = fields.Boolean(compute='_compute_can_amend')
+
+    @api.depends_context('uid')
+    def _compute_can_amend(self):
+        reviewer = self.env.user.has_group('binaryaid_care.group_care_reviewer')
+        for note in self:
+            note.can_amend = note.state == 'submitted' and (reviewer or note.user_id == self.env.user)
+
     def action_amend(self):
         self.ensure_one()
         return {'type': 'ir.actions.act_window', 'name': _('Amend note'), 'res_model': 'binaryaid.care.shift.note.amendment',

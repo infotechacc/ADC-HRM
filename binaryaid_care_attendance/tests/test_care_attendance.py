@@ -127,8 +127,23 @@ class TestCareClock(TransactionCase):
         self.assertEqual(len(note.amendment_ids), 1)
         with self.assertRaises(AccessError):
             Amendment.with_user(self.other_user).create({'note_id': note.id, 'reason': 'x', 'text': 'y'})
-        # Roster administrators see note status but not the note itself.
-        self.assertFalse(self.env['binaryaid.care.shift.note'].with_user(self.admin).search([('id', '=', note.id)]))
+        # Roster administrators read every submitted report, but cannot change or amend it.
+        admin_note = self.env['binaryaid.care.shift.note'].with_user(self.admin).search([('id', '=', note.id)])
+        self.assertEqual(admin_note, note)
+        self.assertTrue(admin_note.answer_ids.mapped('value'))
+        self.assertEqual(len(admin_note.amendment_ids), 1)
+        self.assertFalse(admin_note.can_amend)
+        self.assertTrue(note.with_user(self.worker_user).can_amend)
+        with self.assertRaises(AccessError):
+            note.with_user(self.admin).write({'state': 'draft'})
+        with self.assertRaises(AccessError):
+            Amendment.with_user(self.admin).create({'note_id': note.id, 'reason': 'x', 'text': 'y'})
+        self.assertFalse(self.env['binaryaid.care.shift.note'].with_user(self.other_user).search([('id', '=', note.id)]))
+        board = self.dashboard.with_user(self.admin)
+        self.assertIn('shift_reports', [a['key'] for a in board.get_overview()['quick_actions']])
+        self.assertEqual(board.quick_action('shift_reports'), 'binaryaid_care_attendance.action_shift_reports')
+        with self.assertRaises(AccessError):
+            self.dashboard.with_user(self.worker_user).quick_action('shift_reports')
         self.assertEqual(self.env['binaryaid.work.shift'].with_user(self.admin).browse(self.shift.id).care_note_status, 'submitted')
         self.assertTrue(self.env['binaryaid.care.shift.note'].with_user(self.reviewer).search([('id', '=', note.id)]))
 

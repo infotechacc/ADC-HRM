@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools import format_datetime
 
 from odoo.addons.binaryaid_care.models.tools import get_param
@@ -36,6 +36,8 @@ class HrmsDashboard(models.AbstractModel):
 
     def _quick_actions(self, admin):
         actions = super()._quick_actions(admin)
+        if admin:
+            actions.append({'key': 'shift_reports', 'label': _('Shift reports'), 'icon': 'fa-file-text-o'})
         if not admin and self.env.user.employee_id:
             actions.insert(0, {'key': 'report_incident', 'label': _('Report incident'), 'icon': 'fa-exclamation-triangle'})
         return actions
@@ -84,6 +86,11 @@ class HrmsDashboard(models.AbstractModel):
 
     @api.model
     def quick_action(self, key, date=None):
+        if key == 'shift_reports':
+            self._check_user()
+            if not self._is_admin():
+                raise AccessError(_('Only administrators can view all shift reports.'))
+            return 'binaryaid_care_attendance.action_shift_reports'
         if key == 'report_incident':
             self._check_user()
             return {'type': 'ir.actions.act_window', 'name': _('Report an incident'), 'res_model': 'binaryaid.care.incident',
